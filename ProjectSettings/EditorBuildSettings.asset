@@ -17,6 +17,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Halaman Pilihan Materi.unity
     guid: 6a0041c2c47ebfa469ca694427c990ae
+  - enabled: 1
+    path: Assets/Scenes/ARBalok.unity
+    guid: 00408c0192e1ee9488449f0e141e47e8
   m_configObjects:
     com.unity.adaptiveperformance.google.android.provider_settings: {fileID: 11400000,
       guid: e9c77a55a5e827c4e94df9cb72d84292, type: 2}

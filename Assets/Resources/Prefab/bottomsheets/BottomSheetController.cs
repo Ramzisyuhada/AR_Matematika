@@ -166,19 +166,19 @@ public class BottomSheetController : MonoBehaviour
                 }
             }
             // Swipe down 
-            else
-            {
-                // Swipe CLOSED
-                if(Mathf.Abs(deltaPixelsPerSecond) >= swipeToCloseSpeed)
-                {
-                    OnUserClosedSheet();
-                }
-                // Just swipe to the next detent
-                else
-                {
-                    AnimateToDetentRatioWithIndex(currDetentIdx - 1);
-                }
-            }
+            //else
+            //{
+            //    // Swipe CLOSED
+            //    if(Mathf.Abs(deltaPixelsPerSecond) >= swipeToCloseSpeed)
+            //    {
+            //        OnUserClosedSheet();
+            //    }
+            //    // Just swipe to the next detent
+            //    else
+            //    {
+            //        AnimateToDetentRatioWithIndex(currDetentIdx - 1);
+            //    }
+            //}
         }
         else
         {

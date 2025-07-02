@@ -19,4 +19,9 @@ public class UIEngine : MonoBehaviour
     {
         SceneManager.LoadScene("Halaman Materi ruang sisi datar");
     }
+    public void PertanyaanSimantik()
+    {
+        SceneManager.LoadScene("ARBalok");
+
+    }
 }

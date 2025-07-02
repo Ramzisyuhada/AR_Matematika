@@ -6,6 +6,7 @@ using UnityEngine;
 using System.Collections;
 using UnityEngine.UI;
 using UnityEngine.Events;
+using System.Linq;
 public enum FlipMode
 {
     RightToLeft,
@@ -22,6 +23,7 @@ public class Book : MonoBehaviour {
     public bool enableShadowEffect=true;
     //represent the index of the sprite shown in the right page
     public int currentPage = 0;
+    public  GameObject ButtonSimantik;
     public int TotalPageCount
     {
         get { return bookPages.Length; }
@@ -141,6 +143,13 @@ public class Book : MonoBehaviour {
         if (pageDragging && interactable)
         {
             UpdateBook();
+        }
+        if (currentPage >= bookPages.Length)
+        {
+            ButtonSimantik.SetActive(true);
+        }else if (currentPage < bookPages.Length)
+        {
+            ButtonSimantik.SetActive(false);
         }
     }
     public void UpdateBook()
@@ -276,7 +285,10 @@ public class Book : MonoBehaviour {
     }
     public void DragRightPageToPoint(Vector3 point)
     {
-        if (currentPage >= bookPages.Length) return;
+        if (currentPage >= bookPages.Length) {
+            ButtonSimantik.SetActive(true);
+            return;
+        } 
         pageDragging = true;
         mode = FlipMode.RightToLeft;
         f = point;
