@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1045 &1
+EditorBuildSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/Start Screen.unity
+    guid: c850ee8c3b14cc8459e7e186857cf567
+  - enabled: 1
+    path: Assets/Scenes/Home Screen.unity
+    guid: a176c63607eb1564e9295c76b84b2d82
+  - enabled: 1
+    path: Assets/Scenes/Halaman Materi ruang sisi datar.unity
+    guid: 50a98ceb4b231b14e8adf96cbccf268b
+  - enabled: 1
+    path: Assets/Scenes/Halaman Pilihan Materi.unity
+    guid: 6a0041c2c47ebfa469ca694427c990ae
+  m_configObjects:
+    com.unity.adaptiveperformance.google.android.provider_settings: {fileID: 11400000,
+      guid: e9c77a55a5e827c4e94df9cb72d84292, type: 2}
+    com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: dddd50cc7a9b58f40942d7ac2a931e37,
+      type: 2}
+    com.unity.adaptiveperformance.samsung.android.provider_settings: {fileID: 11400000,
+      guid: fa7579799b39a734f96fe062a2bdf124, type: 2}
+    com.unity.adaptiveperformance.simulator.provider_settings: {fileID: 11400000,
+      guid: 0b5f9f96790be71409d2543c9dad70e8, type: 2}
