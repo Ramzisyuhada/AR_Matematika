@@ -11,7 +11,7 @@ public class AksiObject : MonoBehaviour
 
     private void Start()
     {
-        anim = GetComponent<Animator>();
+        anim = GetComponentInParent<Animator>();
     }
 
     void Update()
