@@ -93,6 +93,7 @@ public class BottomSheetController : MonoBehaviour
     public void OnPointerDown(BaseEventData baseEventData)
     {
         // Initialize tracking variables to detect single-taps
+
         isTouching = true;
         didDrag = false;
         tapDuration = 0;

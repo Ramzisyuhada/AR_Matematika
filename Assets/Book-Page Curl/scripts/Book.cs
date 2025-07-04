@@ -138,18 +138,27 @@ public class Book : MonoBehaviour {
             return localPos;
         }
     }
+    private bool isButtonHidden = false;
+
     void Update()
     {
         if (pageDragging && interactable)
         {
             UpdateBook();
         }
-        if (currentPage >= bookPages.Length)
+        if (currentPage >= bookPages.Length && !isButtonHidden)
         {
-            ButtonSimantik.SetActive(true);
-        }else if (currentPage < bookPages.Length)
+            isButtonHidden = true;
+            LeanTween.scale(ButtonSimantik, Vector3.one, 1f)
+                     
+                     .setEase(LeanTweenType.easeOutElastic);
+        }
+        else if (currentPage < bookPages.Length && isButtonHidden)
         {
-            ButtonSimantik.SetActive(false);
+            isButtonHidden = false;
+            LeanTween.scale(ButtonSimantik, Vector3.zero, 1f)
+                    
+                     .setEase(LeanTweenType.easeOutElastic);
         }
     }
     public void UpdateBook()

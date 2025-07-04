@@ -1,10 +1,12 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class AksiObject : MonoBehaviour
 {
     private Vector2 touchStartPos;
     public float rotationSpeed = 0.1f;
+    public Camera arCamera; // Drag ARCamera Vuforia ke sini lewat Inspector
 
     private float currentYRotation = 0f;
     private float currentXRotation = 0f;
@@ -19,11 +21,21 @@ public class AksiObject : MonoBehaviour
     private Material originalMaterial;
     private Color originalColor;
 
+    [Header("UI Text")]
+    [SerializeField] GameObject[] Text; 
 
     private GameObject[] UI;
-   
+    private bool isTouchingThisObject = false;
+
     private void Start()
     {
+        string sceneName = SceneManager.GetActiveScene().name;
+        if (sceneName.Equals("ARBalok"))
+        {
+            Debug.Log(sceneName);
+            Screen.orientation = ScreenOrientation.LandscapeLeft;
+
+        }
         InitAlas = new Vector3[Alas.Length];
         UI = new GameObject[Alas.Length];
 
@@ -51,15 +63,31 @@ public class AksiObject : MonoBehaviour
 
     void Update()
     {
+        if (Screen.orientation == ScreenOrientation.LandscapeLeft || Screen.orientation == ScreenOrientation.LandscapeRight)
+        {
+            Debug.Log("Sedang Landscape");
+        }
+
+        // Untuk mobile (touch)
         if (Input.touchCount == 1)
         {
             Touch touch = Input.GetTouch(0);
 
+            Ray ray = arCamera.ScreenPointToRay(touch.position);
+            RaycastHit hit;
+
             if (touch.phase == TouchPhase.Began)
             {
-                touchStartPos = touch.position;
+                if (Physics.Raycast(ray, out hit))
+                {
+                    if (hit.transform == transform)
+                    {
+                        isTouchingThisObject = true;
+                        touchStartPos = touch.position;
+                    }
+                }
             }
-            else if (touch.phase == TouchPhase.Moved)
+            else if (touch.phase == TouchPhase.Moved && isTouchingThisObject)
             {
                 float deltaX = touch.deltaPosition.x;
                 float deltaY = touch.deltaPosition.y;
@@ -70,12 +98,31 @@ public class AksiObject : MonoBehaviour
 
                 transform.rotation = Quaternion.Euler(currentXRotation, currentYRotation, 0f);
             }
+            else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
+            {
+                isTouchingThisObject = false;
+            }
         }
-        else if (Input.GetMouseButtonDown(0))
+
+        // Untuk PC (mouse)
+        if (Input.GetMouseButtonDown(0))
         {
-            touchStartPos = Input.mousePosition;
+
+            Ray ray = arCamera.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+
+            if (Physics.Raycast(ray, out hit))
+            {
+
+                if (hit.transform == transform)
+                {
+                    isTouchingThisObject = true;
+                    touchStartPos = Input.mousePosition;
+                }
+            }
+
         }
-        else if (Input.GetMouseButton(0))
+        else if (Input.GetMouseButton(0) && isTouchingThisObject)
         {
             Vector2 mouseDelta = (Vector2)Input.mousePosition - touchStartPos;
 
@@ -87,8 +134,11 @@ public class AksiObject : MonoBehaviour
 
             touchStartPos = Input.mousePosition;
         }
+        else if (Input.GetMouseButtonUp(0))
+        {
+            isTouchingThisObject = false;
+        }
     }
-
     public void LuasBalok()
     {
         if (anim != null)
@@ -108,6 +158,74 @@ public class AksiObject : MonoBehaviour
         StartCoroutine(JalankanLuasTegakBerurutan());
     }
 
+    public void LuasAlas()
+    {
+        StartCoroutine(JalankanLuasAlas());
+    }
+
+
+    private IEnumerator JalankanLuasAlas()
+    {
+        yield return StartCoroutine (AnimasiLuasAlas());
+        yield return StartCoroutine(AnimasiLuasAlasTutup());
+
+    }
+    private IEnumerator  AnimasiLuasAlas()
+    {
+        Vector3 offset = new Vector3(0f, 0.5f, 0f);
+        Color warna = new Color(1f, 0f, 1f, 0.5f);
+
+        for (int i = 0; i < Alas.Length; i++)
+        {
+            GameObject alas = Alas[i];
+            if (alas != null && alas.name == "Alas_Atas")
+            {
+                Vector3 target = alas.transform.localPosition + offset;
+                LeanTween.moveLocal(alas, target, 1f);
+                LeanTween.scale(UI[i], Vector3.one, 1f);
+
+                foreach (Renderer rend in alas.GetComponentsInChildren<Renderer>())
+                {
+                    rend.enabled = true;
+                    rend.material = new Material(rend.material);
+                    LeanTween.value(alas, rend.material.color, warna, 1f).setOnUpdate((Color val) =>
+                    {
+                        rend.material.color = val;
+                    });
+                }
+                yield return new WaitForSeconds(3f);
+            }
+        }
+    }
+
+    private IEnumerator AnimasiLuasAlasTutup()
+    {
+       
+
+        for (int i = 0; i < Alas.Length; i++)
+        {
+            GameObject alas = Alas[i];
+            if (alas != null && alas.name == "Alas_Atas")
+            {
+                LeanTween.moveLocal(alas, InitAlas[i], 1f);
+                LeanTween.scale(UI[i], Vector3.zero, 1f);
+
+                Renderer renderers = alas.GetComponentInChildren<Renderer>();
+              
+                    if (renderers == null) continue;
+
+                    Color startColor = renderers.material.color;
+                    Color endColor = originalColor;
+
+                    LeanTween.value(alas, startColor, endColor, 1f).setOnUpdate((Color val) =>
+                    {
+                        renderers.material.color = val;
+                    });
+                
+                yield return new WaitForSeconds(3f);
+            }
+        }
+    }
     private IEnumerator JalankanLuasTegakBerurutan()
     {
         yield return StartCoroutine(AnimasiLuasTegak());
@@ -141,13 +259,13 @@ public class AksiObject : MonoBehaviour
             GameObject alas = Alas[i];
             if (alas == null) continue;
 
-            // Gerakan posisi
+            
             Vector3 target = alas.transform.localPosition + targetOffsets[i];
             LeanTween.moveLocal(alas, target, 1f);
             LeanTween.scale(UI[i], new Vector3(1f, 1f, 1f), 1f);
 
             Renderer[] renderers = alas.GetComponentsInChildren<Renderer>();
-
+           // LeanTween.scale(Text[i], new Vector3(1f, 1f, 1f), 1f);
             foreach (Renderer rend in renderers)
             {
                 if (rend == null) continue;
