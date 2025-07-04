@@ -163,7 +163,74 @@ public class AksiObject : MonoBehaviour
         StartCoroutine(JalankanLuasAlas());
     }
 
+    public void LuasTotal()
+    {
+        StartCoroutine (JalankanLuasTotal());
+    }
 
+
+    private IEnumerator JalankanLuasTotal()
+    {
+        yield return StartCoroutine(AnimasiLuasTotal());
+        yield return StartCoroutine(AnimasiLuasTotalTutup());
+
+    }
+
+    private IEnumerator AnimasiLuasTotal()
+    {
+        Vector3[] targetOffsets = new Vector3[]
+       {
+            new Vector3(0f, 0f, 0.5f),
+            new Vector3(0f, 0f, -0.5f),
+            new Vector3(-0.5f, 0f, 0f),
+            new Vector3(0.5f, 0f, 0f),
+            new Vector3(0f, 0.5f, 0f),
+            new Vector3(0f, -0.5f, 0f),
+       };
+
+        Color[] warnaAlas = new Color[]
+        {
+            new Color(1f, 0f, 0f, 0.5f),   // Merah
+            new Color(0f, 1f, 0f, 0.5f),   // Hijau
+            new Color(0f, 0f, 1f, 0.5f),   // Biru
+            new Color(1f, 1f, 0f, 0.5f),   // Kuning
+            new Color(1f, 0f, 1f, 0.5f),   // Magenta
+            new Color(0f, 1f, 1f, 0.5f),   // Cyan
+        };
+
+        for (int i = 0; i < Alas.Length && i < targetOffsets.Length && i < warnaAlas.Length; i++)
+        {
+            GameObject alas = Alas[i];
+            if (alas == null) continue;
+
+
+            Vector3 target = alas.transform.localPosition + targetOffsets[i];
+            LeanTween.moveLocal(alas, target, 1f);
+            LeanTween.scale(UI[i], new Vector3(1f, 1f, 1f), 1f);
+
+            Renderer[] renderers = alas.GetComponentsInChildren<Renderer>();
+            // LeanTween.scale(Text[i], new Vector3(1f, 1f, 1f), 1f);
+            foreach (Renderer rend in renderers)
+            {
+                if (rend == null) continue;
+
+                rend.enabled = true;
+
+                rend.material = new Material(rend.material);
+
+                Color start = rend.material.color;
+                Color end = warnaAlas[i];
+
+                LeanTween.value(alas, start, end, 1f).setOnUpdate((Color val) =>
+                {
+                    rend.material.color = val;
+                });
+            }
+
+            yield return new WaitForSeconds(1.2f);
+        }
+    }
+    
     private IEnumerator JalankanLuasAlas()
     {
         yield return StartCoroutine (AnimasiLuasAlas());
@@ -254,7 +321,7 @@ public class AksiObject : MonoBehaviour
             new Color(0f, 1f, 1f, 0.5f),   // Cyan
         };
 
-        for (int i = 0; i < Alas.Length && i < targetOffsets.Length && i < warnaAlas.Length; i++)
+        for (int i = 0; i < Alas.Length - 2 && i < targetOffsets.Length - 2 && i < warnaAlas.Length - 2; i++)
         {
             GameObject alas = Alas[i];
             if (alas == null) continue;
@@ -290,6 +357,34 @@ public class AksiObject : MonoBehaviour
     }
 
     IEnumerator AnimasiLuasTegakTutup()
+    {
+        for (int i = 0; i < Alas.Length - 2 && i < InitAlas.Length - 2; i++)
+        {
+            GameObject alas = Alas[i];
+            if (alas == null) continue;
+
+            LeanTween.moveLocal(alas, InitAlas[i], 1f);
+            LeanTween.scale(UI[i], new Vector3(0f, 0f, 0f), 1f);
+
+            Renderer[] renderers = alas.GetComponentsInChildren<Renderer>();
+            foreach (Renderer rend in renderers)
+            {
+                if (rend == null) continue;
+
+                Color startColor = rend.material.color;
+                Color endColor = originalColor;
+
+                LeanTween.value(alas, startColor, endColor, 1f).setOnUpdate((Color val) =>
+                {
+                    rend.material.color = val;
+                });
+            }
+            yield return new WaitForSeconds(1.2f);
+        }
+    }
+
+
+    IEnumerator AnimasiLuasTotalTutup()
     {
         for (int i = 0; i < Alas.Length && i < InitAlas.Length; i++)
         {

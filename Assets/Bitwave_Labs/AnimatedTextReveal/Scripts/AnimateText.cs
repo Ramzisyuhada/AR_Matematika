@@ -48,11 +48,16 @@ namespace BitWave_Labs.AnimatedTextReveal
 
         public void PlayButton(string text)
         {
+            animatedTextReveal.TextMesh.text = "";
+
             lines = new List<string>();
             lines.Add(text);
+            Debug.Log(_cycleCoroutine == null);
             if (_cycleCoroutine == null)
 
                 _cycleCoroutine = StartCoroutine(CycleThroughLines());
+            _cycleCoroutine = null;
+
 
         }
 
