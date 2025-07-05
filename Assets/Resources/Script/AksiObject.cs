@@ -155,17 +155,29 @@ public class AksiObject : MonoBehaviour
 
     public void LuasTegak()
     {
+        LeanTween.scale(gameObject,new Vector3(0.8f,0.8f,0.8f),1f).setEase(LeanTweenType.easeOutElastic);
+        GameObject Volume = GameObject.Find("Volume");
+        LeanTween.scale(Volume, new Vector3(0f, 0f, 0f), 1f).setEase(LeanTweenType.easeOutElastic);
+
         StartCoroutine(JalankanLuasTegakBerurutan());
     }
 
     public void LuasAlas()
     {
+        LeanTween.scale(gameObject, new Vector3(0.8f, 0.8f, 0.8f), 1f).setEase(LeanTweenType.easeOutElastic);
+        GameObject Volume = GameObject.Find("Volume");
+        LeanTween.scale(Volume, new Vector3(0f, 0f, 0f), 1f).setEase(LeanTweenType.easeOutElastic);
+
         StartCoroutine(JalankanLuasAlas());
     }
 
     public void LuasTotal()
     {
-        StartCoroutine (JalankanLuasTotal());
+        LeanTween.scale(gameObject, new Vector3(0.8f, 0.8f, 0.8f), 1f).setEase(LeanTweenType.easeOutElastic);
+        GameObject Volume = GameObject.Find("Volume");
+        LeanTween.scale(Volume, new Vector3(0f, 0f, 0f), 1f).setEase(LeanTweenType.easeOutElastic);
+
+        StartCoroutine(JalankanLuasTotal());
     }
 
 

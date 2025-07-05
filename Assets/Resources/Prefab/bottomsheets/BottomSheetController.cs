@@ -35,7 +35,7 @@ public class BottomSheetController : MonoBehaviour
     private float swipeToToggleSpeed = 500;
     private List<float> swipeCache = new List<float>();
     private Vector2 prevTouchPoint;
-
+    [SerializeField] private float minYPosition = 200f;
     // Anim speed: How many times can we travel the full height (1920) in one second?
     // In this case, five times.
     private float animPixelsPerSecond = 1920f * 3.5f;
@@ -83,7 +83,11 @@ public class BottomSheetController : MonoBehaviour
         if (isTouching)
         {
             tapDuration += Time.deltaTime;
-            transform.position = Vector3.Lerp(transform.position, touchMatchmovePosition, Time.deltaTime * 20f);
+
+            Vector3 targetPosition = touchMatchmovePosition;
+            targetPosition.y = Mathf.Max(minYPosition, targetPosition.y); // tambahkan batas bawah
+
+            transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * 20f);
         }
     }
 
@@ -210,7 +214,7 @@ public class BottomSheetController : MonoBehaviour
         // From the rect point, we can get the coordinates that speak to this Rect Transform
         // Ignore anything horizontal (or depth, which I don't think is possible!)
         touchMatchmovePosition = transform.position;
-        touchMatchmovePosition.y = parentCanvas.transform.TransformPoint(rectPoint).y;
+        touchMatchmovePosition.y = Mathf.Max(minYPosition, parentCanvas.transform.TransformPoint(rectPoint).y);
     }
 
     private void TrackSwipeEvents(Vector2 currTouchPoint)

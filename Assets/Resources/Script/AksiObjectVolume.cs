@@ -24,6 +24,8 @@ public class AksiObjectVolume : MonoBehaviour
     private GameObject[] UI;
     private bool isTouchingThisObject = false;
 
+    public GameObject Balok;
+
     private void Start()
     {
         List<GameObject> anakKubus = new List<GameObject>();
@@ -40,6 +42,7 @@ public class AksiObjectVolume : MonoBehaviour
 
     public void Volume()
     {
+        LeanTween.scale(Balok, new Vector3(0f, 0f, 0f), 1f).setEase(LeanTweenType.easeOutElastic);
         StartCoroutine(AnimasiVolume());
     }
 
