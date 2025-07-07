@@ -519,7 +519,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 14.699951}
+  m_AnchoredPosition: {x: 0, y: 28}
   m_SizeDelta: {x: 0, y: 29.40016}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &209870230
@@ -2545,31 +2545,31 @@ PrefabInstance:
         type: 3}
     - target: {fileID: 22433904, guid: fe9bfb5044c0cc646baba1ad7d354100, type: 3}
       propertyPath: m_Pivot.y
-      value: 0.31351995
+      value: 0.19688334
       objectReference: {fileID: 0}
     - target: {fileID: 22433904, guid: fe9bfb5044c0cc646baba1ad7d354100, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 708.1306
+      value: 752.575
       objectReference: {fileID: 0}
     - target: {fileID: 22433904, guid: fe9bfb5044c0cc646baba1ad7d354100, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 1129.323
+      value: 1911.2207
       objectReference: {fileID: 0}
     - target: {fileID: 22436914, guid: fe9bfb5044c0cc646baba1ad7d354100, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 1731.8173
+      value: 2842.9282
       objectReference: {fileID: 0}
     - target: {fileID: 22436914, guid: fe9bfb5044c0cc646baba1ad7d354100, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 946.66797
+      value: 4013.335
       objectReference: {fileID: 0}
     - target: {fileID: 22437570, guid: fe9bfb5044c0cc646baba1ad7d354100, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 708.1306
+      value: 752.575
       objectReference: {fileID: 0}
     - target: {fileID: 22437570, guid: fe9bfb5044c0cc646baba1ad7d354100, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 946.66797
+      value: 4013.335
       objectReference: {fileID: 0}
     - target: {fileID: 22443772, guid: fe9bfb5044c0cc646baba1ad7d354100, type: 3}
       propertyPath: m_Pivot.x
@@ -2657,15 +2657,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 22488492, guid: fe9bfb5044c0cc646baba1ad7d354100, type: 3}
       propertyPath: m_Pivot.y
-      value: 0.31351995
+      value: 0.19688334
       objectReference: {fileID: 0}
     - target: {fileID: 22488492, guid: fe9bfb5044c0cc646baba1ad7d354100, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 708.1306
+      value: 752.575
       objectReference: {fileID: 0}
     - target: {fileID: 22488492, guid: fe9bfb5044c0cc646baba1ad7d354100, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 1129.323
+      value: 1911.2207
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -4633,7 +4633,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -5.153, y: -175.09}
+  m_AnchoredPosition: {x: -5.153, y: -243.3}
   m_SizeDelta: {x: 810.3062, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2107593159

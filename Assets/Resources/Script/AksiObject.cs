@@ -1,4 +1,5 @@
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -22,11 +23,12 @@ public class AksiObject : MonoBehaviour
     private Color originalColor;
 
     [Header("UI Text")]
-    [SerializeField] GameObject[] Text; 
-
+    [SerializeField] GameObject Text;
+    [SerializeField] GameObject ButtomSheet;
     private GameObject[] UI;
     private bool isTouchingThisObject = false;
     
+
 
     private void Awake()
     {
@@ -41,7 +43,9 @@ public class AksiObject : MonoBehaviour
     }
     private void Start()
     {
-       
+        parent = Text.transform.parent;
+
+
         InitAlas = new Vector3[Alas.Length];
         UI = new GameObject[Alas.Length];
 
@@ -102,7 +106,7 @@ public class AksiObject : MonoBehaviour
                 currentXRotation += deltaY * rotationSpeed;
                 currentXRotation = Mathf.Clamp(currentXRotation, -80f, 80f);
 
-                transform.rotation = Quaternion.Euler(currentXRotation, currentYRotation, 0f);
+                transform.rotation = Quaternion.Euler(0f, currentYRotation, 0f);
             }
             else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
             {
@@ -136,7 +140,7 @@ public class AksiObject : MonoBehaviour
             currentXRotation += mouseDelta.y * rotationSpeed;
             currentXRotation = Mathf.Clamp(currentXRotation, -80f, 80f);
 
-            transform.rotation = Quaternion.Euler(currentXRotation, currentYRotation, 0f);
+            transform.rotation = Quaternion.Euler(0f, currentYRotation, 0f);
 
             touchStartPos = Input.mousePosition;
         }
@@ -161,6 +165,7 @@ public class AksiObject : MonoBehaviour
 
     public void LuasTegak()
     {
+        ButtomSheet.SetActive(false);
         LeanTween.scale(gameObject,new Vector3(0.8f,0.8f,0.8f),1f).setEase(LeanTweenType.easeOutElastic);
         GameObject Volume = GameObject.Find("Volume");
         LeanTween.scale(Volume, new Vector3(0f, 0f, 0f), 1f).setEase(LeanTweenType.easeOutElastic);
@@ -173,6 +178,8 @@ public class AksiObject : MonoBehaviour
 
     public void LuasAlas()
     {
+        ButtomSheet.SetActive(false);
+
         if (!gameObject.activeInHierarchy)
         {
             gameObject.SetActive(true);
@@ -186,6 +193,8 @@ public class AksiObject : MonoBehaviour
 
     public void LuasTotal()
     {
+        ButtomSheet.SetActive(false);
+
         if (!gameObject.activeInHierarchy)
         {
             gameObject.SetActive(true);
@@ -262,10 +271,15 @@ public class AksiObject : MonoBehaviour
     
     private IEnumerator JalankanLuasAlas()
     {
+
+
         yield return StartCoroutine (AnimasiLuasAlas());
+        Audio.clip = Suara[7];
+        Audio.Play();
         yield return StartCoroutine(AnimasiLuasAlasTutup());
 
     }
+    Transform parent;
     private IEnumerator  AnimasiLuasAlas()
     {
         Vector3 offset = new Vector3(0f, 0.5f, 0f);
@@ -288,15 +302,28 @@ public class AksiObject : MonoBehaviour
                     {
                         rend.material.color = val;
                     });
+
                 }
+                Audio.clip = Suara[0];
+                Audio.Play();
+                SetText("Luas 1");
+
                 yield return new WaitForSeconds(3f);
             }
         }
     }
+    private void SetText(string name)
+    {
+        GameObject texs = Instantiate(Text);
+        texs.GetComponent<TMP_Text>().text = name;
+        texs.SetActive(true);
+        texs.transform.SetParent(Text.transform.parent, false);
+        LeanTween.scale(texs, Vector3.one, 1f).setEase(LeanTweenType.easeOutElastic);
 
+    }
     private IEnumerator AnimasiLuasAlasTutup()
     {
-       
+
 
         for (int i = 0; i < Alas.Length; i++)
         {
@@ -317,6 +344,7 @@ public class AksiObject : MonoBehaviour
                     {
                         renderers.material.color = val;
                     });
+         
                 
                 yield return new WaitForSeconds(3f);
             }
@@ -325,11 +353,15 @@ public class AksiObject : MonoBehaviour
     private IEnumerator JalankanLuasTegakBerurutan()
     {
         yield return StartCoroutine(AnimasiLuasTegak());
+        Audio.clip = Suara[7];
+        Audio.Play();
         yield return StartCoroutine(AnimasiLuasTegakTutup());
     }
 
     IEnumerator AnimasiLuasTegak()
     {
+        int[] isi = new int[] { 3, 2, 4, 6 };
+
         Vector3[] targetOffsets = new Vector3[]
         {
             new Vector3(0f, 0f, 0.5f),
@@ -378,7 +410,8 @@ public class AksiObject : MonoBehaviour
                     rend.material.color = val;
                 });
             }
-
+            Audio.clip = Suara[isi[i]];
+            Audio.Play();
             yield return new WaitForSeconds(1.2f);
         }
 
