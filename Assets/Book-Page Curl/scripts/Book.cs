@@ -295,7 +295,7 @@ public class Book : MonoBehaviour {
     public void DragRightPageToPoint(Vector3 point)
     {
         Debug.Log(currentPage);
-        if (currentPage >= bookPages.Length - 1) {
+        if (currentPage >= bookPages.Length) {
             ButtonSimantik.SetActive(true);
             return;
         } 

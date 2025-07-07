@@ -26,16 +26,22 @@ public class AksiObject : MonoBehaviour
 
     private GameObject[] UI;
     private bool isTouchingThisObject = false;
+    
 
-    private void Start()
+    private void Awake()
     {
         string sceneName = SceneManager.GetActiveScene().name;
+        arCamera = Camera.main;
         if (sceneName.Equals("ARBalok"))
         {
             Debug.Log(sceneName);
-            Screen.orientation = ScreenOrientation.LandscapeLeft;
+            Screen.orientation = ScreenOrientation.LandscapeRight;
 
         }
+    }
+    private void Start()
+    {
+       
         InitAlas = new Vector3[Alas.Length];
         UI = new GameObject[Alas.Length];
 
@@ -158,12 +164,19 @@ public class AksiObject : MonoBehaviour
         LeanTween.scale(gameObject,new Vector3(0.8f,0.8f,0.8f),1f).setEase(LeanTweenType.easeOutElastic);
         GameObject Volume = GameObject.Find("Volume");
         LeanTween.scale(Volume, new Vector3(0f, 0f, 0f), 1f).setEase(LeanTweenType.easeOutElastic);
-
+        if (!gameObject.activeInHierarchy)
+        {
+            gameObject.SetActive(true);
+        }
         StartCoroutine(JalankanLuasTegakBerurutan());
     }
 
     public void LuasAlas()
     {
+        if (!gameObject.activeInHierarchy)
+        {
+            gameObject.SetActive(true);
+        }
         LeanTween.scale(gameObject, new Vector3(0.8f, 0.8f, 0.8f), 1f).setEase(LeanTweenType.easeOutElastic);
         GameObject Volume = GameObject.Find("Volume");
         LeanTween.scale(Volume, new Vector3(0f, 0f, 0f), 1f).setEase(LeanTweenType.easeOutElastic);
@@ -173,6 +186,10 @@ public class AksiObject : MonoBehaviour
 
     public void LuasTotal()
     {
+        if (!gameObject.activeInHierarchy)
+        {
+            gameObject.SetActive(true);
+        }
         LeanTween.scale(gameObject, new Vector3(0.8f, 0.8f, 0.8f), 1f).setEase(LeanTweenType.easeOutElastic);
         GameObject Volume = GameObject.Find("Volume");
         LeanTween.scale(Volume, new Vector3(0f, 0f, 0f), 1f).setEase(LeanTweenType.easeOutElastic);
