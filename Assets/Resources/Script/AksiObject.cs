@@ -8,16 +8,18 @@ public class AksiObject : MonoBehaviour
     private Vector2 touchStartPos;
     public float rotationSpeed = 0.1f;
     public Camera arCamera; // Drag ARCamera Vuforia ke sini lewat Inspector
+    public GameObject[] Alas;
 
     private float currentYRotation = 0f;
     private float currentXRotation = 0f;
 
     private Animator anim;
-
+    [Header("Audio")]
     public AudioClip[] Suara;
+    public AudioClip[] SuaraRumus;
+
     public AudioSource Audio;
 
-    public GameObject[] Alas;
     private Vector3[] InitAlas;
     private Material originalMaterial;
     private Color originalColor;
@@ -25,6 +27,8 @@ public class AksiObject : MonoBehaviour
     [Header("UI Text")]
     [SerializeField] GameObject Text;
     [SerializeField] GameObject ButtomSheet;
+    [SerializeField] GameObject RumusText;
+    [SerializeField] TMP_Text Header;
     private GameObject[] UI;
     private bool isTouchingThisObject = false;
     
@@ -163,8 +167,41 @@ public class AksiObject : MonoBehaviour
         }
     }
 
+    void DestroyText()
+    {
+        Transform parent = Text.transform.parent;
+        int childCount = parent.childCount;
+
+        for (int i = 0; i < childCount; i++)
+        {
+            Transform child = parent.GetChild(i);
+
+            if (child.gameObject.active) Destroy(child.gameObject);
+        }
+    }
+
+    void DestroyTextRumus()
+    {
+        Transform parent = RumusText.transform.parent;
+        int childCount = parent.childCount;
+
+        for (int i = 0; i < childCount; i++)
+        {
+            Transform child = parent.GetChild(i);
+
+            if (child.gameObject.active) Destroy(child.gameObject);
+        }
+        
+    }
+    public void PrefScane()
+    {
+        SceneManager.LoadScene("Halaman Pilihan Materi");
+    }
     public void LuasTegak()
     {
+        Header.text = "Plane Side Area";
+        DestroyText();
+        DestroyTextRumus();
         ButtomSheet.SetActive(false);
         LeanTween.scale(gameObject,new Vector3(0.8f,0.8f,0.8f),1f).setEase(LeanTweenType.easeOutElastic);
         GameObject Volume = GameObject.Find("Volume");
@@ -178,6 +215,11 @@ public class AksiObject : MonoBehaviour
 
     public void LuasAlas()
     {
+        Header.text = "Base Area";
+
+        DestroyTextRumus();
+
+        DestroyText();
         ButtomSheet.SetActive(false);
 
         if (!gameObject.activeInHierarchy)
@@ -193,6 +235,11 @@ public class AksiObject : MonoBehaviour
 
     public void LuasTotal()
     {
+        Header.text = "Total Area";
+
+        DestroyTextRumus();
+
+        DestroyText();
         ButtomSheet.SetActive(false);
 
         if (!gameObject.activeInHierarchy)
@@ -210,12 +257,21 @@ public class AksiObject : MonoBehaviour
     private IEnumerator JalankanLuasTotal()
     {
         yield return StartCoroutine(AnimasiLuasTotal());
+        Audio.clip = Suara[7];
+
+
+        Audio.Play();
+        yield return new WaitWhile(() => Audio.isPlaying);
         yield return StartCoroutine(AnimasiLuasTotalTutup());
 
     }
 
     private IEnumerator AnimasiLuasTotal()
     {
+        string[] Penjelasan = new string[] { "Luas 4", "Luas 3", "Luas 5", "Luas 6","Luas 1" , "Luas 2" };
+        int[] isi = new int[] { 3, 2, 4, 5,0,8   };
+
+
         Vector3[] targetOffsets = new Vector3[]
        {
             new Vector3(0f, 0f, 0.5f),
@@ -247,7 +303,6 @@ public class AksiObject : MonoBehaviour
             LeanTween.scale(UI[i], new Vector3(1f, 1f, 1f), 1f);
 
             Renderer[] renderers = alas.GetComponentsInChildren<Renderer>();
-            // LeanTween.scale(Text[i], new Vector3(1f, 1f, 1f), 1f);
             foreach (Renderer rend in renderers)
             {
                 if (rend == null) continue;
@@ -263,8 +318,11 @@ public class AksiObject : MonoBehaviour
                 {
                     rend.material.color = val;
                 });
+            
             }
-
+            Audio.clip = Suara[isi[i]];
+            Audio.Play();
+            SetText(Penjelasan[i]);
             yield return new WaitForSeconds(1.2f);
         }
     }
@@ -275,7 +333,11 @@ public class AksiObject : MonoBehaviour
 
         yield return StartCoroutine (AnimasiLuasAlas());
         Audio.clip = Suara[7];
+
+
         Audio.Play();
+        yield return new WaitWhile(() => Audio.isPlaying);
+
         yield return StartCoroutine(AnimasiLuasAlasTutup());
 
     }
@@ -344,11 +406,22 @@ public class AksiObject : MonoBehaviour
                     {
                         renderers.material.color = val;
                     });
-         
-                
+                Audio.clip = SuaraRumus[0];
+                Audio.Play();
+                SetTextRumus("P X L");
+
                 yield return new WaitForSeconds(3f);
             }
         }
+    }
+
+    private void SetTextRumus(string name)
+    {
+        GameObject texs = Instantiate(RumusText);
+        texs.GetComponent<TMP_Text>().text = name;
+        texs.SetActive(true);
+        texs.transform.SetParent(RumusText.transform.parent, false);
+        LeanTween.scale(texs, Vector3.one, 1f).setEase(LeanTweenType.easeOutElastic);
     }
     private IEnumerator JalankanLuasTegakBerurutan()
     {
@@ -362,6 +435,7 @@ public class AksiObject : MonoBehaviour
     {
         int[] isi = new int[] { 3, 2, 4, 6 };
 
+        string[] Penjelasan = new string[] {"Luas 4" , "Luas 3", "Luas 5" , "Luas 6"};
         Vector3[] targetOffsets = new Vector3[]
         {
             new Vector3(0f, 0f, 0.5f),
@@ -412,6 +486,7 @@ public class AksiObject : MonoBehaviour
             }
             Audio.clip = Suara[isi[i]];
             Audio.Play();
+            SetText(Penjelasan[i]);
             yield return new WaitForSeconds(1.2f);
         }
 
@@ -420,6 +495,12 @@ public class AksiObject : MonoBehaviour
 
     IEnumerator AnimasiLuasTegakTutup()
     {
+        int[] isi = new int[] { 3, 3, 5, 4 };
+
+
+        string[] Penjelasan = new string[] { "Luas 4", "Luas 3", "Luas 5", "Luas 6" };
+        string[] PenjelasanRumus = new string[] { "=(L x T) +","(L x T) +","(P x T) +","(P x T)" };
+
         for (int i = 0; i < Alas.Length - 2 && i < InitAlas.Length - 2; i++)
         {
             GameObject alas = Alas[i];
@@ -441,6 +522,9 @@ public class AksiObject : MonoBehaviour
                     rend.material.color = val;
                 });
             }
+            Audio.clip = SuaraRumus[isi[i]];
+            Audio.Play();
+            SetTextRumus(PenjelasanRumus[i]);
             yield return new WaitForSeconds(1.2f);
         }
     }
@@ -448,6 +532,11 @@ public class AksiObject : MonoBehaviour
 
     IEnumerator AnimasiLuasTotalTutup()
     {
+        int[] isi = new int[] { 1,1,3, 3, 5, 4 };
+
+        string[] Penjelasan = new string[] { "Luas 4", "Luas 3", "Luas 5", "Luas 6", "Luas 1", "Luas 2" };
+
+        string[] PenjelasanRumus = new string[] {"= (P x L) +","(P x L) +" ,"(L x T) +", "(L x T) +", "(P x T) +", "(P x T)" };
         for (int i = 0; i < Alas.Length && i < InitAlas.Length; i++)
         {
             GameObject alas = Alas[i];
@@ -469,6 +558,10 @@ public class AksiObject : MonoBehaviour
                     rend.material.color = val;
                 });
             }
+
+            Audio.clip = SuaraRumus[isi[i]];
+            Audio.Play();
+            SetTextRumus(PenjelasanRumus[i]);
             yield return new WaitForSeconds(1.2f);
         }
     }
