@@ -17,6 +17,7 @@ public class AksiObjectVolume : MonoBehaviour
     public AudioSource Audio;
 
     public GameObject[] Kubus;
+    [SerializeField] GameObject ButtomSheet;
 
 
 
@@ -42,7 +43,9 @@ public class AksiObjectVolume : MonoBehaviour
 
     public void Volume()
     {
+        transform.localScale = Vector3.one;
         LeanTween.scale(Balok, new Vector3(0f, 0f, 0f), 1f).setEase(LeanTweenType.easeOutElastic);
+        ButtomSheet.SetActive(false);
         StartCoroutine(AnimasiVolume());
     }
 

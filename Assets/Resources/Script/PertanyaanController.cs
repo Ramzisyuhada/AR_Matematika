@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class PertanyaanController : MonoBehaviour
@@ -20,7 +21,7 @@ public class PertanyaanController : MonoBehaviour
     private float inchToMeter = 0.0254f;
     public GameObject targetObjek;
 
-
+   
     public void JalankanSkenario1()
     {
         JalankanSkenario(-20, +25, -20);
@@ -87,6 +88,7 @@ public class PertanyaanController : MonoBehaviour
         transform.localScale = ukuranAwal;
 
         Jawaban = new string[Pertanyaan.Length];
+
     }
 
     // Update is called once per frame

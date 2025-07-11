@@ -21,7 +21,14 @@ public class UIEngine : MonoBehaviour
     }
     public void PertanyaanSimantik()
     {
+
         SceneManager.LoadScene("ARBalok");
+
+    }
+    
+    private void Awake()
+    {
+        Screen.orientation = ScreenOrientation.Portrait;
 
     }
 }
