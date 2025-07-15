@@ -38,6 +38,8 @@ public class AksiObject : MonoBehaviour
 
     public static bool IsAnimasiPlay;
 
+
+
     private void Awake()
     {
         string sceneName = SceneManager.GetActiveScene().name;
