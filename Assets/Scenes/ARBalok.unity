@@ -17114,8 +17114,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1989afafb3935234496bc1801bbe5aee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  zDistance: 8.019809
-  viewportAnchor: {x: 0.77, y: 0.15}
+  w: 0.8
+  h: 0.23
 --- !u!1001 &1748990200
 PrefabInstance:
   m_ObjectHideFlags: 0

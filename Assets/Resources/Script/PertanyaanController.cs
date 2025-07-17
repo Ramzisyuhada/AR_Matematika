@@ -16,10 +16,11 @@ public class PertanyaanController : MonoBehaviour
     public TMP_InputField inputField;
     public TMP_Text UIPertanyaan;
     public GameObject tabel;
-
+    public GameObject ButtomSheet;
     Vector3 ukuranAwal;
     private float inchToMeter = 0.0254f;
     public GameObject targetObjek;
+
 
    
     public void JalankanSkenario1()
@@ -44,6 +45,7 @@ public class PertanyaanController : MonoBehaviour
 
     private void JalankanSkenario(float persenPanjang, float persenTinggi, float persenLebar)
     {
+        ButtomSheet.SetActive(false);
         Vector3 target = new Vector3(
             ukuranAwal.x * (1 + persenPanjang / 100f),
             ukuranAwal.y * (1 + persenTinggi / 100f),

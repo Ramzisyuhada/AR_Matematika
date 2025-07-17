@@ -9,6 +9,10 @@ public class UIEngine : MonoBehaviour
     {
         SceneManager.LoadScene("Halaman Pilihan Materi");
     }
+    public void Latihan()
+    {
+        SceneManager.LoadScene("Halaman Pilihan Pertanyaan");
+    }
 
     public void Mulai()
     {
@@ -25,7 +29,12 @@ public class UIEngine : MonoBehaviour
         SceneManager.LoadScene("ARBalok");
 
     }
-    
+    public void LatihanSoalDatar()
+    {
+
+        SceneManager.LoadScene("Latihan");
+
+    }
     private void Awake()
     {
         Screen.orientation = ScreenOrientation.Portrait;

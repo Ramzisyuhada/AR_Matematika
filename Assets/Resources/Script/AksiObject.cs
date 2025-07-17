@@ -189,7 +189,7 @@ public class AksiObject : MonoBehaviour
     }
     public void PrefScane()
     {
-        SceneManager.LoadScene("Halaman Pilihan Materi");
+        SceneManager.LoadScene("Home Screen");
     }
 
     private void SetTextHeader(string name)
@@ -232,6 +232,14 @@ public class AksiObject : MonoBehaviour
             gameObject.SetActive(true);
         }
         StartCoroutine(JalankanLuasTegakBerurutan());
+    }
+    private void ScaleRumus(GameObject volume)
+    {
+        int count = volume.transform.childCount;
+        for (int i = 0; i < count; i++)
+        {
+            transform.GetChild(i).gameObject.transform.localScale = Vector3.zero;
+        }
     }
     void DestroyTextPersamaan()
     {
@@ -597,8 +605,8 @@ public class AksiObject : MonoBehaviour
     IEnumerator AnimasiPersamaanAlas()
     {
 
-        string[] PenjelasanPersamaan = new string[] { "2 x", "[ (P x L) ]" };
-        int[] IndexSuara = new int[] { 7, 0 };
+        string[] PenjelasanPersamaan = new string[] { "[ (P x L) ]" };
+        int[] IndexSuara = new int[] { 0 };
         for (int i = 0; i < PenjelasanPersamaan.Length; i++)
         {
 

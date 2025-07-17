@@ -1,28 +1,44 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class ResponsiveObject3D : MonoBehaviour
 {
-    public float zDistance = 8.019809f; // seberapa jauh dari kamera (dalam meter)
-    public Vector2 viewportAnchor = new Vector2(3f, -1.35f); // pojok kanan atas
+    public float w = 1.0f;
+    public float h = 0.5f;
 
-    private Camera arCamera;
 
+    public void PrefScane()
+    {
+        SceneManager.LoadScene("Home Screen");
+    }
     void Start()
     {
-        arCamera = Camera.main;
+        // Posisi di tengah layar (viewport 0.5, 0.5)
+        Vector3 viewportPos = new Vector3(w, h, transform.position.z);
+
+        // Konversi ke world space
+        Vector3 worldPos = Camera.main.ViewportToWorldPoint(viewportPos);
+
+        // Tempatkan objek
+        transform.position = worldPos;
+    }
+
+    private void Update()
+    {
+        Vector3 viewportPos = new Vector3(w, h, transform.position.z);
+
+        // Konversi ke world space
+        Vector3 worldPos = Camera.main.ViewportToWorldPoint(viewportPos);
+
+        // Tempatkan objek
+        transform.position = worldPos;
     }
 
     void LateUpdate()
     {
-        if (arCamera == null) return;
-
-        Vector3 viewportPos = new Vector3(viewportAnchor.x, viewportAnchor.y, zDistance);
-        Vector3 worldPos = arCamera.ViewportToWorldPoint(viewportPos);
-        transform.position = worldPos;
-
-        // Opsional: selalu menghadap ke kamera
-        transform.LookAt(arCamera.transform);
+   
     }
 }
