@@ -38,6 +38,7 @@ public class UIEngine : MonoBehaviour
     private void Awake()
     {
         Screen.orientation = ScreenOrientation.Portrait;
+        Input.gyro.enabled = false;
 
     }
 }

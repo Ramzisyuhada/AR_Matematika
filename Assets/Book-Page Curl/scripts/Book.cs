@@ -148,7 +148,7 @@ public class Book : MonoBehaviour {
         {
             UpdateBook();
         }
-        if (currentPage >= bookPages.Length && !isButtonHidden)
+        if (currentPage >= bookPages.Length - 2  && !isButtonHidden)
         {
             isButtonHidden = true;
             LeanTween.scale(Kanan, Vector3.zero, 1f).setEase(LeanTweenType.easeOutElastic);
@@ -157,7 +157,7 @@ public class Book : MonoBehaviour {
                      
                      .setEase(LeanTweenType.easeOutElastic);
         }
-        else if (currentPage < bookPages.Length && isButtonHidden)
+        else if (currentPage < bookPages.Length-2 && isButtonHidden)
         {
             isButtonHidden = false;
             LeanTween.scale(Kanan, Vector3.one, 1f).setEase(LeanTweenType.easeOutElastic);
@@ -302,7 +302,7 @@ public class Book : MonoBehaviour {
     public void DragRightPageToPoint(Vector3 point)
     {
         Debug.Log(currentPage);
-        if (currentPage >= bookPages.Length) {
+        if (currentPage >= bookPages.Length - 2) {
             ButtonSimantik.SetActive(true);
             return;
         } 

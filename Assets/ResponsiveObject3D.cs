@@ -9,7 +9,11 @@ public class ResponsiveObject3D : MonoBehaviour
     public float w = 1.0f;
     public float h = 0.5f;
 
+    private void Awake()
+    {
+      //  Input.gyro.enabled = false;
 
+    }
     public void PrefScane()
     {
         SceneManager.LoadScene("Home Screen");

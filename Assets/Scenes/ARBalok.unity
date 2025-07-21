@@ -11542,6 +11542,7 @@ GameObject:
   - component: {fileID: 1315004296}
   - component: {fileID: 1315004298}
   - component: {fileID: 1315004297}
+  - component: {fileID: 1315004299}
   m_Layer: 6
   m_Name: Volume
   m_TagString: Untagged
@@ -11772,6 +11773,20 @@ MonoBehaviour:
   Kubus: []
   ButtomSheet: {fileID: 5482475401697807481}
   Balok: {fileID: 622665861}
+--- !u!114 &1315004299
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1315004295}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1989afafb3935234496bc1801bbe5aee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  w: 0.86
+  h: 0.34
 --- !u!1001 &1319293960
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -17114,8 +17129,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1989afafb3935234496bc1801bbe5aee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  w: 0.8
-  h: 0.23
+  w: 0.86
+  h: 0.34
 --- !u!1001 &1748990200
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -14,6 +14,7 @@ public class Coklat : MonoBehaviour
     private float currentYRotation = 0f;
     private void Awake()
     {
+
         string sceneName = SceneManager.GetActiveScene().name;
         arCamera = Camera.main;
         if (sceneName.Equals("Latihan"))
@@ -22,6 +23,11 @@ public class Coklat : MonoBehaviour
             Screen.orientation = ScreenOrientation.LandscapeRight;
 
         }
+    }
+    public void Mulai()
+    {
+        SceneManager.LoadScene("Home Screen");
+        
     }
     void Update()
     {
