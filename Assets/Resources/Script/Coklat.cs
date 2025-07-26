@@ -12,11 +12,41 @@ public class Coklat : MonoBehaviour
     private Vector2 touchStartPos;
     private float currentXRotation = 0f;
     private float currentYRotation = 0f;
+
+    [SerializeField] Transform PosisiMuncul;
+    [SerializeField] GameObject Particle;
+    private void Start()
+    {
+        StartCoroutine(Animasi());
+    }
+
+    private IEnumerator Animasi()
+    {
+        // Mulai animasi scale
+        int scaleTweenId = LeanTween.scale(gameObject, new Vector3(0.0507999994f, 0.0126999998f, 0.203199998f), 0.9f)
+                                    .setEase(LeanTweenType.easeOutElastic)
+                                    .id;
+
+        // Mulai animasi move (dijalankan bersamaan)
+        int moveTweenId = LeanTween.move(gameObject,
+                                new Vector3(gameObject.transform.position.x, -15.73942f, gameObject.transform.position.z),
+                                0.9f)
+                            .setEase(LeanTweenType.easeOutElastic)
+                            .id;
+        Destroy(Instantiate(Particle, transform.position, Quaternion.identity), 2f);
+
+        // Tunggu hingga kedua animasi selesai
+        yield return new WaitUntil(() =>
+            !LeanTween.isTweening(scaleTweenId) && !LeanTween.isTweening(moveTweenId)
+        );
+        Debug.Log("Animasi scale dan move selesai");
+    }
+
+
     private void Awake()
     {
 
         string sceneName = SceneManager.GetActiveScene().name;
-        arCamera = Camera.main;
         if (sceneName.Equals("Latihan"))
         {
             Debug.Log(sceneName);
@@ -24,11 +54,7 @@ public class Coklat : MonoBehaviour
 
         }
     }
-    public void Mulai()
-    {
-        SceneManager.LoadScene("Home Screen");
-        
-    }
+ 
     void Update()
     {
         // Mengecek orientasi layar

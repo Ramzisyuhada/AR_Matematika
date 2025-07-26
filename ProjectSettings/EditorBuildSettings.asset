@@ -6,26 +6,17 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/Start Screen.unity
-    guid: c850ee8c3b14cc8459e7e186857cf567
+    path: Assets/Resources/Scane/Mulai.unity
+    guid: 275eb5fa0ad4800469c0603803d5ca9b
   - enabled: 1
-    path: Assets/Scenes/Home Screen.unity
-    guid: a176c63607eb1564e9295c76b84b2d82
+    path: Assets/Resources/Scane/Home.unity
+    guid: d11121dd2e2ba1f40b71999d730597ef
   - enabled: 1
-    path: Assets/Scenes/Halaman Materi ruang sisi datar.unity
-    guid: 50a98ceb4b231b14e8adf96cbccf268b
+    path: Assets/Resources/Scane/Materi_2.unity
+    guid: 82a5c5b7c38b29f44949b8e0c6ff760e
   - enabled: 1
-    path: Assets/Scenes/Halaman Pilihan Materi.unity
-    guid: 6a0041c2c47ebfa469ca694427c990ae
-  - enabled: 1
-    path: Assets/Scenes/ARBalok.unity
-    guid: 00408c0192e1ee9488449f0e141e47e8
-  - enabled: 1
-    path: Assets/Scenes/Halaman Pilihan Pertanyaan.unity
-    guid: 00462efd613e8ce48aac85e3121de746
-  - enabled: 1
-    path: Assets/Scenes/Latihan.unity
-    guid: 06dfc59f47d363444a09ca395fa9e41f
+    path: Assets/Resources/Scane/AR.unity
+    guid: 9a64509c721403c419861aeef4d312a1
   m_configObjects:
     com.unity.adaptiveperformance.google.android.provider_settings: {fileID: 11400000,
       guid: e9c77a55a5e827c4e94df9cb72d84292, type: 2}

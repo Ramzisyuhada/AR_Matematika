@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using TMPro;
 [RequireComponent(typeof(Book))]
 public class AutoFlip : MonoBehaviour {
     public FlipMode Mode;
@@ -12,7 +14,13 @@ public class AutoFlip : MonoBehaviour {
     public int AnimationFramesCount = 40;
     bool isFlipping = false;
     // Use this for initialization
+
+    public TMP_Text Text;
+
+
     void Start () {
+        if (Text != null) Text.text = "Page 1/" + ((ControledBook.TotalPageCount / 2)).ToString();
+
         if (!ControledBook)
             ControledBook = GetComponent<Book>();
         if (AutoStartFlip)
@@ -27,10 +35,20 @@ public class AutoFlip : MonoBehaviour {
     {
         StartCoroutine(FlipToEnd());
     }
+    int index = 1;
     public void FlipRightPage()
     {
+        if (ControledBook.currentPage < ControledBook.TotalPageCount - 2) index++;
         if (isFlipping) return;
-        if (ControledBook.currentPage >= ControledBook.TotalPageCount -2) return;
+
+        if (ControledBook.currentPage >= ControledBook.TotalPageCount - 2)
+        {
+            SceneManager.LoadScene("AR");
+
+        }
+       
+        if (Text != null) Text.text = "Page" + index + "/" + ((ControledBook.TotalPageCount / 2)).ToString();
+
         isFlipping = true;
         float frameTime = PageFlipTime / AnimationFramesCount;
         float xc = (ControledBook.EndBottomRight.x + ControledBook.EndBottomLeft.x) / 2;
@@ -42,12 +60,16 @@ public class AutoFlip : MonoBehaviour {
     }
     public void FlipLeftPage()
     {
+        index--;
         if (isFlipping) return;
+
         if (ControledBook.currentPage <= 0)
         {
-            SceneManager.LoadScene("Home Screen");
+            SceneManager.LoadScene("Home");
 
         }
+        if (Text != null) Text.text = "Page" + index + "/" + ((ControledBook.TotalPageCount / 2)).ToString();
+
         isFlipping = true;
         float frameTime = PageFlipTime / AnimationFramesCount;
         float xc = (ControledBook.EndBottomRight.x + ControledBook.EndBottomLeft.x) / 2;
@@ -57,6 +79,10 @@ public class AutoFlip : MonoBehaviour {
         float dx = (xl) * 2 / AnimationFramesCount;
         StartCoroutine(FlipLTR(xc, xl, h, frameTime, dx));
     }
+    int currenttest = 0;
+
+
+   
     IEnumerator FlipToEnd()
     {
         yield return new WaitForSeconds(DelayBeforeStarting);

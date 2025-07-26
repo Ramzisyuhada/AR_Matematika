@@ -43,8 +43,7 @@ public class AksiObject : MonoBehaviour
     private void Awake()
     {
         string sceneName = SceneManager.GetActiveScene().name;
-        arCamera = Camera.main;
-        if (sceneName.Equals("ARBalok"))
+        if (sceneName.Equals("AR"))
         {
             Debug.Log(sceneName);
             Screen.orientation = ScreenOrientation.LandscapeRight;
@@ -187,10 +186,7 @@ public class AksiObject : MonoBehaviour
         }
         
     }
-    public void PrefScane()
-    {
-        SceneManager.LoadScene("Home Screen");
-    }
+
 
     private void SetTextHeader(string name)
     {
@@ -200,8 +196,8 @@ public class AksiObject : MonoBehaviour
         HeaderText.SetActive(true);
 
         HeaderText.GetComponent<TMP_Text>().text = name;
-        LeanTween.scale(HeaderText.transform.parent.gameObject, Vector3.zero, 1f).setEase(LeanTweenType.easeOutElastic);
-        LeanTween.scale(HeaderText.transform.parent.gameObject, new Vector3(1f, 1f, 1f), 1f).setEase(LeanTweenType.easeOutElastic);
+        LeanTween.scale(HeaderText.transform.parent.parent.gameObject, Vector3.zero, 1f).setEase(LeanTweenType.easeOutElastic);
+        LeanTween.scale(HeaderText.transform.parent.parent.gameObject, new Vector3(1f, 1f, 1f), 1f).setEase(LeanTweenType.easeOutElastic);
     }
 
     public void SetActiveFalseVolume()
@@ -219,7 +215,7 @@ public class AksiObject : MonoBehaviour
         SetTextHeader("Plane Side Area");
 
         IsAnimasiPlay = true;
-        Header.text = "Plane Side Area";
+        //Header.text = "Plane Side Area";
         DestroyText();
         DestroyTextRumus();
         ButtomSheet.SetActive(false);
@@ -260,7 +256,7 @@ public class AksiObject : MonoBehaviour
         if (IsAnimasiPlay) return;
         DestroyTextPersamaan();
         IsAnimasiPlay = true;
-        Header.text = "Base Area";
+        //Header.text = "Base Area";
         SetTextHeader("Base Area");
 
         DestroyTextRumus();
@@ -289,7 +285,7 @@ public class AksiObject : MonoBehaviour
         IsAnimasiPlay = true;
         SetTextHeader("Total Area");
 
-        Header.text = "Total Area";
+        //Header.text = "Total Area";
 
         DestroyTextRumus();
 

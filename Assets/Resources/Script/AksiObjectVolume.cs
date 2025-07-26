@@ -7,7 +7,7 @@ public class AksiObjectVolume : MonoBehaviour
 {
     private Vector2 touchStartPos;
     public float rotationSpeed = 0.1f;
-    public Camera arCamera; // Drag ARCamera Vuforia ke sini lewat Inspector
+    public Camera arCamera; // Drag      Vuforia ke sini lewat Inspector
 
     private float currentYRotation = 0f;
     private float currentXRotation = 0f;

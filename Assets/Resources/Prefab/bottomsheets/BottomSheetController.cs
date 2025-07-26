@@ -17,7 +17,7 @@ public class BottomSheetController : MonoBehaviour
     // Here, they are the numbers we see in the UI when the menu is at it's lowest,
     // middles, and highest states.
     private const float DEFAULT_DETENT_RATIO_LOW = 0.4f;
-    private const float DEFAULT_DETENT_RATIO_HIGH = 0.94f;
+    private const float DEFAULT_DETENT_RATIO_HIGH = 0.9f;
     private float[] detentRatios = new float[] { DEFAULT_DETENT_RATIO_LOW, DEFAULT_DETENT_RATIO_HIGH };
     // Used to bookmark which detent we are currently indexed to
     private int currDetentIdx = 0;

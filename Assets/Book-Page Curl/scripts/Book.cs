@@ -7,6 +7,7 @@ using System.Collections;
 using UnityEngine.UI;
 using UnityEngine.Events;
 using System.Linq;
+using TMPro;
 public enum FlipMode
 {
     RightToLeft,
@@ -23,9 +24,8 @@ public class Book : MonoBehaviour {
     public bool enableShadowEffect=true;
     //represent the index of the sprite shown in the right page
     public int currentPage = 0;
-    public  GameObject ButtonSimantik;
-    public GameObject Kanan;
-
+    //public  GameObject ButtonSimantik;
+    //public GameObject Kanan;
     public int TotalPageCount
     {
         get { return bookPages.Length; }
@@ -84,7 +84,6 @@ public class Book : MonoBehaviour {
         float pageWidth = BookPanel.rect.width / 2.0f;
         float pageHeight = BookPanel.rect.height;
         NextPageClip.rectTransform.sizeDelta = new Vector2(pageWidth, pageHeight + pageHeight * 2);
-
 
         ClippingPlane.rectTransform.sizeDelta = new Vector2(pageWidth * 2 + pageHeight, pageHeight + pageHeight * 2);
 
@@ -148,25 +147,25 @@ public class Book : MonoBehaviour {
         {
             UpdateBook();
         }
-        if (currentPage >= bookPages.Length - 2  && !isButtonHidden)
-        {
-            isButtonHidden = true;
-            LeanTween.scale(Kanan, Vector3.zero, 1f).setEase(LeanTweenType.easeOutElastic);
+        //if (currentPage >= bookPages.Length - 2  && !isButtonHidden)
+        //{
+        //    isButtonHidden = true;
+        //    LeanTween.scale(Kanan, Vector3.zero, 1f).setEase(LeanTweenType.easeOutElastic);
 
-            LeanTween.scale(ButtonSimantik, Vector3.one, 1f)
+        //    LeanTween.scale(ButtonSimantik, Vector3.one, 1f)
                      
-                     .setEase(LeanTweenType.easeOutElastic);
-        }
-        else if (currentPage < bookPages.Length-2 && isButtonHidden)
-        {
-            isButtonHidden = false;
-            LeanTween.scale(Kanan, Vector3.one, 1f).setEase(LeanTweenType.easeOutElastic);
+        //             .setEase(LeanTweenType.easeOutElastic);
+        //}
+        //else if (currentPage < bookPages.Length-2 && isButtonHidden)
+        //{
+        //    isButtonHidden = false;
+        //    LeanTween.scale(Kanan, Vector3.one, 1f).setEase(LeanTweenType.easeOutElastic);
 
 
-            LeanTween.scale(ButtonSimantik, Vector3.zero, 1f)
+        //    LeanTween.scale(ButtonSimantik, Vector3.zero, 1f)
                     
-                     .setEase(LeanTweenType.easeOutElastic);
-        }
+        //             .setEase(LeanTweenType.easeOutElastic);
+        //}
     }
     public void UpdateBook()
     {
@@ -303,7 +302,7 @@ public class Book : MonoBehaviour {
     {
         Debug.Log(currentPage);
         if (currentPage >= bookPages.Length - 2) {
-            ButtonSimantik.SetActive(true);
+            //ButtonSimantik.SetActive(true);
             return;
         } 
         pageDragging = true;
@@ -399,7 +398,7 @@ public class Book : MonoBehaviour {
         }
     }
     Coroutine currentCoroutine;
-    void UpdateSprites()
+    public void UpdateSprites()
     {
         LeftNext.sprite= (currentPage > 0 && currentPage <= bookPages.Length) ? bookPages[currentPage-1] : background;
         RightNext.sprite=(currentPage>=0 &&currentPage<bookPages.Length) ? bookPages[currentPage] : background;
@@ -464,6 +463,11 @@ public class Book : MonoBehaviour {
                 ));
         }
     }
+    public bool IsPageFlipping
+    {
+        get { return currentCoroutine != null; }
+    }
+
     public IEnumerator TweenTo(Vector3 to, float duration, System.Action onFinish)
     {
         int steps = (int)(duration / 0.025f);
@@ -480,4 +484,24 @@ public class Book : MonoBehaviour {
         if (onFinish != null)
             onFinish();
     }
+
+
+    public void OnButtonImageSelected(Button clickedButton)
+    {
+        Sprite buttonSprite = clickedButton.image.sprite;
+
+        // Tambahkan sprite ke halaman terakhir
+        bookPages = bookPages.Append(buttonSprite).ToArray();
+
+        // Lanjut ke halaman terakhir dengan animasi
+        if (currentPage < bookPages.Length - 2)
+        {
+            DragRightPageToPoint(ebr); // arahkan flip ke kanan
+            ReleasePage(); // langsung flip
+        }
+
+        UpdateSprites();
+    }
+
+
 }

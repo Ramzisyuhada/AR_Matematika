@@ -18,28 +18,9 @@ public class ResponsiveObject3D : MonoBehaviour
     {
         SceneManager.LoadScene("Home Screen");
     }
-    void Start()
-    {
-        // Posisi di tengah layar (viewport 0.5, 0.5)
-        Vector3 viewportPos = new Vector3(w, h, transform.position.z);
 
-        // Konversi ke world space
-        Vector3 worldPos = Camera.main.ViewportToWorldPoint(viewportPos);
 
-        // Tempatkan objek
-        transform.position = worldPos;
-    }
 
-    private void Update()
-    {
-        Vector3 viewportPos = new Vector3(w, h, transform.position.z);
-
-        // Konversi ke world space
-        Vector3 worldPos = Camera.main.ViewportToWorldPoint(viewportPos);
-
-        // Tempatkan objek
-        transform.position = worldPos;
-    }
 
     void LateUpdate()
     {
