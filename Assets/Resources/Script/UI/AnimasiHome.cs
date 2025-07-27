@@ -58,4 +58,6 @@ public class AnimasiHome : MonoBehaviour
         Screen.orientation = ScreenOrientation.Portrait;
 
     }
+
+   
 }
