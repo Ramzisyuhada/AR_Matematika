@@ -8,6 +8,7 @@ using UnityEngine.UI;
 public class AngketManager : MonoBehaviour
 {
     public Angket angket;
+
     [Header("UI")]
     [SerializeField] TMP_Text Pertanyaan;
     [SerializeField] TMP_Text A;
@@ -20,45 +21,28 @@ public class AngketManager : MonoBehaviour
     [SerializeField] private GameObject Sumbit;
     [SerializeField] private GameObject Next;
     [SerializeField] private TMP_Dropdown[] dropdowns;
+
+    [Header("Icon Opsi Dropdown")]
+    [SerializeField] private Sprite[] opsiIcons; // 3 gambar sesuai urutan "1", "2", "3"
+
     private string[] semuaOpsi = { "1", "2", "3" };
     private string[] jawabanDipilih = new string[3];
+
     string[,] kunciJawaban = new string[30, 3]
     {
-        {"Visual", "Auditori", "Kinestetik"},
-        {"Auditori", "Kinestetik", "Visual"},
-        {"Kinestetik", "Visual", "Auditori"},
-        {"Visual", "Auditori", "Kinestetik"},
-        {"Auditori", "Kinestetik", "Visual"},
-        {"Kinestetik", "Visual", "Auditori"},
-        {"Visual", "Auditori", "Kinestetik"},
-        {"Auditori", "Kinestetik", "Visual"},
-        {"Kinestetik", "Visual", "Auditori"},
-        {"Visual", "Auditori", "Kinestetik"},
-        {"Auditori", "Kinestetik", "Visual"},
-        {"Kinestetik", "Visual", "Auditori"},
-        {"Visual", "Auditori", "Kinestetik"},
-        {"Auditori", "Kinestetik", "Visual"},
-        {"Kinestetik", "Visual", "Auditori"},
-        {"Visual", "Auditori", "Kinestetik"},
-        {"Auditori", "Kinestetik", "Visual"},
-        {"Kinestetik", "Visual", "Auditori"},
-        {"Visual", "Auditori", "Kinestetik"},
-        {"Auditori", "Kinestetik", "Visual"},
-        {"Kinestetik", "Visual", "Auditori"},
-        {"Visual", "Auditori", "Kinestetik"},
-        {"Auditori", "Kinestetik", "Visual"},
-        {"Kinestetik", "Visual", "Auditori"},
-        {"Visual", "Auditori", "Kinestetik"},
-        {"Auditori", "Kinestetik", "Visual"},
-        {"Kinestetik", "Visual", "Auditori"},
-        {"Visual", "Auditori", "Kinestetik"},
-        {"Auditori", "Kinestetik", "Visual"},
-        {"Kinestetik", "Visual", "Auditori"},
+        {"Visual", "Auditori", "Kinestetik"}, {"Auditori", "Kinestetik", "Visual"}, {"Kinestetik", "Visual", "Auditori"},
+        {"Visual", "Auditori", "Kinestetik"}, {"Auditori", "Kinestetik", "Visual"}, {"Kinestetik", "Visual", "Auditori"},
+        {"Visual", "Auditori", "Kinestetik"}, {"Auditori", "Kinestetik", "Visual"}, {"Kinestetik", "Visual", "Auditori"},
+        {"Visual", "Auditori", "Kinestetik"}, {"Auditori", "Kinestetik", "Visual"}, {"Kinestetik", "Visual", "Auditori"},
+        {"Visual", "Auditori", "Kinestetik"}, {"Auditori", "Kinestetik", "Visual"}, {"Kinestetik", "Visual", "Auditori"},
+        {"Visual", "Auditori", "Kinestetik"}, {"Auditori", "Kinestetik", "Visual"}, {"Kinestetik", "Visual", "Auditori"},
+        {"Visual", "Auditori", "Kinestetik"}, {"Auditori", "Kinestetik", "Visual"}, {"Kinestetik", "Visual", "Auditori"},
+        {"Visual", "Auditori", "Kinestetik"}, {"Auditori", "Kinestetik", "Visual"}, {"Kinestetik", "Visual", "Auditori"},
+        {"Visual", "Auditori", "Kinestetik"}, {"Auditori", "Kinestetik", "Visual"}, {"Kinestetik", "Visual", "Auditori"},
+        {"Visual", "Auditori", "Kinestetik"}, {"Auditori", "Kinestetik", "Visual"}, {"Kinestetik", "Visual", "Auditori"},
     };
 
-
     int IndexAngket = 0;
-
     private bool isUpdatingDropdowns = false;
 
     private void Start()
@@ -69,12 +53,8 @@ public class AngketManager : MonoBehaviour
         {
             int index = i;
             dropdowns[i].ClearOptions();
-            List<string> opsiAwal = new List<string> { "" };
-            opsiAwal.AddRange(semuaOpsi);
-            dropdowns[i].AddOptions(opsiAwal);
             dropdowns[i].value = 0;
             jawabanDipilih[i] = null;
-
             dropdowns[i].onValueChanged.AddListener((_) => OnDropdownChanged(index));
         }
 
@@ -95,32 +75,19 @@ public class AngketManager : MonoBehaviour
 
             for (int i = 0; i < dropdowns.Length; i++)
             {
-                // Update pilihan dropdown
                 UpdateDropdownOptions(i);
 
-                // Ambil jawaban yang sudah dipilih sebelumnya
                 string jawaban = p.OpsiPertanyaan[i].jawabanTerpilih;
 
-                // Cek apakah sudah ada jawaban sebelumnya
                 if (!string.IsNullOrEmpty(jawaban))
                 {
                     jawabanDipilih[i] = jawaban;
 
-                    // Temukan index dari jawaban dalam opsi dropdown
                     int optionIndex = dropdowns[i].options.FindIndex(opt => opt.text == jawaban);
-                    if (optionIndex >= 0)
-                    {
-                        dropdowns[i].value = optionIndex;
-                    }
-                    else
-                    {
-                        dropdowns[i].value = 0;
-                        jawabanDipilih[i] = null;
-                    }
+                    dropdowns[i].value = optionIndex >= 0 ? optionIndex : 0;
                 }
                 else
                 {
-                    // Belum ada jawaban, reset ke default (kosong)
                     dropdowns[i].value = 0;
                     jawabanDipilih[i] = null;
                 }
@@ -128,23 +95,17 @@ public class AngketManager : MonoBehaviour
         }
     }
 
-
-
     public void NextAngket()
     {
         if (IndexAngket < angket.PertanyaanList.Count - 1)
         {
             SimpanJawabanSaatIni();
-
             IndexAngket++;
             SetAllText();
         }
 
-        if (IndexAngket == angket.PertanyaanList.Count - 1)
-        {
-            Sumbit.SetActive(true);
-            Next.SetActive(false);
-        }
+        Sumbit.SetActive(IndexAngket == angket.PertanyaanList.Count - 1);
+        Next.SetActive(IndexAngket != angket.PertanyaanList.Count - 1);
     }
 
     public void PrevAngket()
@@ -152,7 +113,6 @@ public class AngketManager : MonoBehaviour
         if (IndexAngket > 0)
         {
             SimpanJawabanSaatIni();
-
             IndexAngket--;
             SetAllText();
             Sumbit.SetActive(false);
@@ -162,20 +122,21 @@ public class AngketManager : MonoBehaviour
 
     void OnDropdownChanged(int changedIndex)
     {
-        if (isUpdatingDropdowns) return;
 
+        if (isUpdatingDropdowns) return;
         isUpdatingDropdowns = true;
 
         TMP_Dropdown changedDropdown = dropdowns[changedIndex];
-
         if (changedDropdown.value <= 0 || changedDropdown.value >= changedDropdown.options.Count)
         {
+            Debug.Log("Hello world");
             jawabanDipilih[changedIndex] = null;
         }
         else
         {
             string dipilih = changedDropdown.options[changedDropdown.value].text;
-
+            // rawImage = dropdowns[changedIndex].GetComponentInChildren<RawImage>(true);
+         
             for (int i = 0; i < jawabanDipilih.Length; i++)
             {
                 if (i != changedIndex && jawabanDipilih[i] == dipilih)
@@ -186,19 +147,19 @@ public class AngketManager : MonoBehaviour
             }
 
             jawabanDipilih[changedIndex] = dipilih;
+
         }
 
-        // Perbarui semua opsi dropdown
         for (int i = 0; i < dropdowns.Length; i++)
         {
             UpdateDropdownOptions(i);
+          
+
         }
 
         isUpdatingDropdowns = false;
         CekValidasiSemuaDropdown();
-
     }
-
 
     void UpdateDropdownOptions(int dropdownIndex)
     {
@@ -220,32 +181,34 @@ public class AngketManager : MonoBehaviour
             }
 
             if (!sudahDipakai || jawabanSaatIni == opsi)
-            {
                 opsiBaru.Add(opsi);
-            }
         }
 
-        // Tambahkan opsi kosong di awal
-        List<string> opsiFinal = new List<string> { "" };
-        opsiFinal.AddRange(opsiBaru);
+        List<TMP_Dropdown.OptionData> optionDatas = new List<TMP_Dropdown.OptionData>();
+        optionDatas.Add(new TMP_Dropdown.OptionData("-")); // Kosong di awal
+
+        foreach (string opsi in opsiBaru)
+        {
+            int index = System.Array.IndexOf(semuaOpsi, opsi);
+            Sprite icon = (index >= 0 && index < opsiIcons.Length) ? opsiIcons[index] : null;
+            optionDatas.Add(new TMP_Dropdown.OptionData(opsi, icon));
+        }
 
         dd.ClearOptions();
-        dd.AddOptions(opsiFinal);
+        dd.AddOptions(optionDatas);
 
-        // Tentukan nilai dropdown
-        if (jawabanSaatIni != null && opsiBaru.Contains(jawabanSaatIni))
+        if (!string.IsNullOrEmpty(jawabanSaatIni))
         {
-            dd.value = opsiFinal.IndexOf(jawabanSaatIni);
+            int valIndex = optionDatas.FindIndex(o => o.text == jawabanSaatIni);
+            dd.value = valIndex >= 0 ? valIndex : 0;
         }
         else
         {
             dd.value = 0;
-            jawabanDipilih[dropdownIndex] = null;
         }
 
         ResizeDropdownWidth(dd);
     }
-
 
     void ResizeDropdownWidth(TMP_Dropdown dropdown)
     {
@@ -264,11 +227,8 @@ public class AngketManager : MonoBehaviour
 
         RectTransform rt = dropdown.GetComponent<RectTransform>();
         if (rt != null)
-        {
             rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, maxWidth + padding);
-        }
     }
-
 
     void SimpanJawabanSaatIni()
     {
@@ -279,8 +239,6 @@ public class AngketManager : MonoBehaviour
             if (i < jawabanDipilih.Length)
             {
                 string pilihan = jawabanDipilih[i];
-
-                // Simpan jawaban, termasuk pengosongan
                 p.OpsiPertanyaan[i].jawabanTerpilih = string.IsNullOrEmpty(pilihan) ? null : pilihan;
             }
         }
@@ -289,7 +247,6 @@ public class AngketManager : MonoBehaviour
     void CekValidasiSemuaDropdown()
     {
         bool semuaTerisi = true;
-
         foreach (var jawaban in jawabanDipilih)
         {
             if (string.IsNullOrEmpty(jawaban))
@@ -307,23 +264,18 @@ public class AngketManager : MonoBehaviour
     {
         SimpanJawabanSaatIni();
         HasilBackground.SetActive(true);
-        int visual = 0;
-        int auditori = 0;
-        int kinestetik = 0;
+        int visual = 0, auditori = 0, kinestetik = 0;
 
         for (int i = 0; i < angket.PertanyaanList.Count; i++)
         {
             var pertanyaan = angket.PertanyaanList[i];
-
             for (int j = 0; j < pertanyaan.OpsiPertanyaan.Count; j++)
             {
                 string jawaban = pertanyaan.OpsiPertanyaan[j].jawabanTerpilih;
-
                 if (!string.IsNullOrEmpty(jawaban))
                 {
-                    int skor = int.Parse(jawaban); // Nilai 1, 2, atau 3
+                    int skor = int.Parse(jawaban);
                     string kategori = kunciJawaban[i, j];
-
                     if (kategori == "Visual") visual += skor;
                     else if (kategori == "Auditori") auditori += skor;
                     else if (kategori == "Kinestetik") kinestetik += skor;
@@ -337,25 +289,16 @@ public class AngketManager : MonoBehaviour
         Debug.Log("Kesimpulan Gaya Belajar: " + hasil);
     }
 
-
-
     string GetKesimpulanGayaBelajar(int visual, int auditori, int kinestetik)
     {
         List<string> dominan = new List<string>();
         int max = Mathf.Max(visual, auditori, kinestetik);
-
         if (visual == max) dominan.Add("Visual");
         if (auditori == max) dominan.Add("Auditori");
         if (kinestetik == max) dominan.Add("Kinestetik");
 
-        if (dominan.Count == 1)
-            return $"Gaya belajar Anda dominan adalah {dominan[0]}.";
-        else
-            return $"Gaya belajar Anda bersifat campuran: {string.Join(" - ", dominan)}.";
+        return dominan.Count == 1 ?
+            $"Gaya belajar Anda dominan adalah {dominan[0]}." :
+            $"Gaya belajar Anda bersifat campuran: {string.Join(" - ", dominan)}.";
     }
-
-
-
-
-
 }

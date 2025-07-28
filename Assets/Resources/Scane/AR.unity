@@ -1894,7 +1894,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 2081901890}
   m_Direction: 0
   m_Value: 1
-  m_Size: 1
+  m_Size: 0.9999999
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -4012,8 +4012,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1119571721}
   m_HandleRect: {fileID: 1119571720}
   m_Direction: 2
-  m_Value: 0.99999803
-  m_Size: 0.51588964
+  m_Value: 0.99999815
+  m_Size: 0.5158896
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -18013,6 +18013,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 4761375210523260972, guid: 43973978dc0774b45bbb21070310f4ca,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.78999615
+      objectReference: {fileID: 0}
     - target: {fileID: 6039403372000063436, guid: 43973978dc0774b45bbb21070310f4ca,
         type: 3}
       propertyPath: m_LocalScale.x
@@ -18052,6 +18057,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 9084804206753902630, guid: 43973978dc0774b45bbb21070310f4ca,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.7899961
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -22545,7 +22555,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 30615997}
   m_Direction: 0
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.9999999
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

@@ -338,8 +338,8 @@ public class AksiObject : MonoBehaviour
         int[] UrutanIndexAnimasi = new int[] {4,5,1,0,2,3};
         Vector3[] targetOffsets = new Vector3[]
        {
-            new Vector3(0f, 0.5f, 0f),
-            new Vector3(0f,  -0.5f, 0f),
+            new Vector3(0f, -0.5f, 0f),
+            new Vector3(0f,  0.5f, 0f),
             new Vector3(0f, 0f, -0.5f),
             new Vector3(0f, 0f, 0.5f),
             new Vector3(-0.5f, 0f, 0f),
@@ -461,7 +461,7 @@ public class AksiObject : MonoBehaviour
     Transform parent;
     private IEnumerator  AnimasiLuasAlas()
     {
-        Vector3 offset = new Vector3(0f, 0.5f, 0f);
+        Vector3 offset = new Vector3(0f, -0.5f, 0f);
         Color warna = new Color(1f, 0f, 1f, 0.5f);
 
         for (int i = 0; i < Alas.Length; i++)

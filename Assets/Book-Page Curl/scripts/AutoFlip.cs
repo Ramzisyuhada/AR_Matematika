@@ -19,7 +19,7 @@ public class AutoFlip : MonoBehaviour {
 
 
     void Start () {
-        if (Text != null) Text.text = "Page 1/" + ((ControledBook.TotalPageCount / 2)).ToString();
+        if (Text != null) Text.text = "Page 1/" + ((ControledBook.TotalPageCount / 2) - 1).ToString();
 
         if (!ControledBook)
             ControledBook = GetComponent<Book>();
@@ -38,16 +38,15 @@ public class AutoFlip : MonoBehaviour {
     int index = 1;
     public void FlipRightPage()
     {
-        if (ControledBook.currentPage < ControledBook.TotalPageCount - 2) index++;
-        if (isFlipping) return;
-
-        if (ControledBook.currentPage >= ControledBook.TotalPageCount - 2)
+        if (isFlipping || ControledBook.currentPage >= ControledBook.TotalPageCount - 2)
         {
-            SceneManager.LoadScene("AR");
-
+            if (ControledBook.currentPage >= ControledBook.TotalPageCount - 2)
+                SceneManager.LoadScene("AR");
+            return;
         }
-       
-        if (Text != null) Text.text = "Page" + index + "/" + ((ControledBook.TotalPageCount / 2)).ToString();
+
+        index++;
+        UpdatePageText();
 
         isFlipping = true;
         float frameTime = PageFlipTime / AnimationFramesCount;
@@ -58,17 +57,23 @@ public class AutoFlip : MonoBehaviour {
         float dx = (xl)*2 / AnimationFramesCount;
         StartCoroutine(FlipRTL(xc, xl, h, frameTime, dx));
     }
+    private void UpdatePageText()
+    {
+        if (Text != null)
+            Text.text = $"Page {index}/{ControledBook.TotalPageCount / 2}";
+    }
+
     public void FlipLeftPage()
     {
-        index--;
-        if (isFlipping) return;
-
-        if (ControledBook.currentPage <= 0)
+        if (isFlipping || ControledBook.currentPage <= 0)
         {
-            SceneManager.LoadScene("Home");
-
+            if (ControledBook.currentPage <= 0)
+                SceneManager.LoadScene("Home");
+            return;
         }
-        if (Text != null) Text.text = "Page" + index + "/" + ((ControledBook.TotalPageCount / 2)).ToString();
+
+        index--;
+        UpdatePageText();
 
         isFlipping = true;
         float frameTime = PageFlipTime / AnimationFramesCount;

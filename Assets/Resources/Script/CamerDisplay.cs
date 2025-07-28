@@ -2,14 +2,17 @@ using Kamgam.MeshExtractor;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.SceneManagement; // Pindahkan ke sini
+
 #if UNITY_ANDROID
 using UnityEngine.Android;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 #endif
 
 public class CamerDisplay : MonoBehaviour
 {
+
+
 
     public RawImage rawImage; 
     public Texture2D backgroundTexture; 
