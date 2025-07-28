@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -17,6 +17,16 @@ public class AngketManager : MonoBehaviour
     [SerializeField] TMP_Text Nomer;
     [SerializeField] TMP_Text HasilText;
 
+
+    [Header("Game Object")]
+    [SerializeField] private GameObject ListTutorial;
+    [SerializeField] private GameObject ListJawaban;
+    [SerializeField] private GameObject PembukaanList;
+    [SerializeField] private GameObject Header;
+    [SerializeField] private GameObject PrevObject;
+    [SerializeField] private GameObject NextObject;
+    [SerializeField] private GameObject MulaiObject;
+
     [SerializeField] private GameObject HasilBackground;
     [SerializeField] private GameObject Sumbit;
     [SerializeField] private GameObject Next;
@@ -25,6 +35,7 @@ public class AngketManager : MonoBehaviour
     [Header("Icon Opsi Dropdown")]
     [SerializeField] private Sprite[] opsiIcons; // 3 gambar sesuai urutan "1", "2", "3"
 
+    private bool MulaiAngket;
     private string[] semuaOpsi = { "1", "2", "3" };
     private string[] jawabanDipilih = new string[3];
 
@@ -44,10 +55,12 @@ public class AngketManager : MonoBehaviour
 
     int IndexAngket = 0;
     private bool isUpdatingDropdowns = false;
+    int UrutanHalaman = 0;
 
     private void Start()
     {
         jawabanDipilih = new string[dropdowns.Length];
+        UrutanListHalaman();
 
         for (int i = 0; i < dropdowns.Length; i++)
         {
@@ -85,27 +98,57 @@ public class AngketManager : MonoBehaviour
 
                     int optionIndex = dropdowns[i].options.FindIndex(opt => opt.text == jawaban);
                     dropdowns[i].value = optionIndex >= 0 ? optionIndex : 0;
+
+                    OnDropdownChanged(i); // ✅ tambahkan ini
+
                 }
                 else
                 {
                     dropdowns[i].value = 0;
                     jawabanDipilih[i] = null;
+                        OnDropdownChanged(i); // ✅ tambahkan ini juga
+
                 }
             }
         }
     }
-
+    public void StartAngket()
+    {
+        MulaiAngket = true;
+        PrevObject.SetActive(true);
+        NextObject.SetActive(true);
+        MulaiObject.SetActive(false);
+        IndexAngket = 0;
+        UrutanHalaman = 2;
+        UrutanListHalaman();
+    }
     public void NextAngket()
     {
         if (IndexAngket < angket.PertanyaanList.Count - 1)
         {
+            if (!MulaiAngket)
+            {
+                UrutanHalaman++;
+                UrutanListHalaman();
+
+                if (UrutanHalaman == 1)
+                {
+                    MulaiAngket = true;
+                    PrevObject.SetActive(false);
+                    NextObject.SetActive(false);
+                    MulaiObject.SetActive(true);
+                }
+
+                return;
+            }
+
             SimpanJawabanSaatIni();
             IndexAngket++;
             SetAllText();
         }
 
         Sumbit.SetActive(IndexAngket == angket.PertanyaanList.Count - 1);
-        Next.SetActive(IndexAngket != angket.PertanyaanList.Count - 1);
+        Next.SetActive(IndexAngket < angket.PertanyaanList.Count - 1);
     }
 
     public void PrevAngket()
@@ -115,11 +158,20 @@ public class AngketManager : MonoBehaviour
             SimpanJawabanSaatIni();
             IndexAngket--;
             SetAllText();
+
             Sumbit.SetActive(false);
             Next.SetActive(true);
         }
+        else if (!MulaiAngket && UrutanHalaman > 0)
+        {
+            UrutanHalaman--;
+            UrutanListHalaman();
+        }
     }
+    void NampilIcon()
+    {
 
+    }
     void OnDropdownChanged(int changedIndex)
     {
 
@@ -129,11 +181,13 @@ public class AngketManager : MonoBehaviour
         TMP_Dropdown changedDropdown = dropdowns[changedIndex];
         if (changedDropdown.value <= 0 || changedDropdown.value >= changedDropdown.options.Count)
         {
-            Debug.Log("Hello world");
+            dropdowns[changedIndex].GetComponentInChildren<RawImage>().enabled = true;
             jawabanDipilih[changedIndex] = null;
         }
         else
         {
+            dropdowns[changedIndex].GetComponentInChildren<RawImage>().enabled = false;
+
             string dipilih = changedDropdown.options[changedDropdown.value].text;
             // rawImage = dropdowns[changedIndex].GetComponentInChildren<RawImage>(true);
          
@@ -158,9 +212,33 @@ public class AngketManager : MonoBehaviour
         }
 
         isUpdatingDropdowns = false;
-        CekValidasiSemuaDropdown();
+        if(MulaiAngket)CekValidasiSemuaDropdown();
     }
 
+    void UrutanListHalaman()
+    {
+        switch (UrutanHalaman)
+        {
+            case 0: 
+                PembukaanList.SetActive(true); 
+                Header.SetActive(false);
+                ListTutorial.SetActive(false);
+                ListJawaban.SetActive(false);
+                break;
+            case 1:
+                PembukaanList.SetActive(false);
+                Header.SetActive(true);
+                ListTutorial.SetActive(true);
+                ListJawaban.SetActive(false);
+                break;
+            case 2:
+                PembukaanList.SetActive(false);
+                Header.SetActive(true);
+                ListTutorial.SetActive(false);
+                ListJawaban.SetActive(true);
+                break;
+        }
+    }
     void UpdateDropdownOptions(int dropdownIndex)
     {
         TMP_Dropdown dd = dropdowns[dropdownIndex];
@@ -238,7 +316,10 @@ public class AngketManager : MonoBehaviour
         {
             if (i < jawabanDipilih.Length)
             {
+                Debug.Log("Pertanyaan : " + angket.PertanyaanList[IndexAngket].teksPertanyaan);
                 string pilihan = jawabanDipilih[i];
+                Debug.Log("Jawaban nya adalah : " + pilihan);
+
                 p.OpsiPertanyaan[i].jawabanTerpilih = string.IsNullOrEmpty(pilihan) ? null : pilihan;
             }
         }

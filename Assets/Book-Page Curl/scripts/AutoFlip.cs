@@ -19,7 +19,7 @@ public class AutoFlip : MonoBehaviour {
 
 
     void Start () {
-        if (Text != null) Text.text = "Page 1/" + ((ControledBook.TotalPageCount / 2) - 1).ToString();
+        if (Text != null) Text.text = "Page 1/" + ((ControledBook.TotalPageCount / 2) + 1).ToString();
 
         if (!ControledBook)
             ControledBook = GetComponent<Book>();
@@ -60,7 +60,7 @@ public class AutoFlip : MonoBehaviour {
     private void UpdatePageText()
     {
         if (Text != null)
-            Text.text = $"Page {index}/{ControledBook.TotalPageCount / 2}";
+            Text.text = $"Page {index}/{(ControledBook.TotalPageCount / 2) + 1}";
     }
 
     public void FlipLeftPage()

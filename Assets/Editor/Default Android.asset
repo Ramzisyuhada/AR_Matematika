@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: faf9e5a5972d8420ab6e88e89471f4a2, type: 3}
+  m_Name: Default Android
+  m_EditorClassIdentifier: 
+  buildApplication: 1
+  buildTarget: 13
+  productName: ARMatematika
+  companyName: DefaultCompany
+  applicationIdentifier: com.DefaultCompany.AR_PANIO
+  version: 1.0.2
+  versionCode: 1
+  developmentBuild: 0
+  defineSymbols: 
+  scenes:
+  - enable: 1
+    name: Mulai.unity
+  - enable: 1
+    name: Home.unity
+  - enable: 1
+    name: Materi_2.unity
+  - enable: 1
+    name: AR.unity
+  - enable: 1
+    name: Angket.unity
+  - enable: 1
+    name: Pilihan Materi.unity
+  excludeDirectories:
+  - D:/Project/AR_Matematika/Assets/Resources
+  buildAssetBundle: 0
+  copyToStreamingAssets: 0
+  bundleOptions: 0
+  iosSettings:
+    automaticallySign: 1
+    developerTeamId: 
+    codeSignIdentity: 
+    profileId: 
+    profileSpecifier: 
+    languages: jp;en
+    generateExportOptionPlist: 0
+    exportMethod: development
+    uploadBitcode: 0
+    uploadSymbols: 0
+    entitlementsFile: 
+    services: 
+    frameworks: 
+  androidSettings:
+    keystoreFile: 
+    keystorePassword: 
+    keystoreAliasName: 
+    keystoreAliasPassword: 
