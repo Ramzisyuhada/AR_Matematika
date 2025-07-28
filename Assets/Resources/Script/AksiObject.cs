@@ -196,8 +196,8 @@ public class AksiObject : MonoBehaviour
         HeaderText.SetActive(true);
 
         HeaderText.GetComponent<TMP_Text>().text = name;
-        LeanTween.scale(HeaderText.transform.parent.parent.gameObject, Vector3.zero, 1f).setEase(LeanTweenType.easeOutElastic);
-        LeanTween.scale(HeaderText.transform.parent.parent.gameObject, new Vector3(1f, 1f, 1f), 1f).setEase(LeanTweenType.easeOutElastic);
+        LeanTween.scale(HeaderText.transform.parent.gameObject, Vector3.zero, 1f).setEase(LeanTweenType.easeOutElastic);
+        LeanTween.scale(HeaderText.transform.parent.gameObject, new Vector3(1f, 1f, 1f), 1f).setEase(LeanTweenType.easeOutElastic);
     }
 
     public void SetActiveFalseVolume()
@@ -543,8 +543,10 @@ public class AksiObject : MonoBehaviour
 
     private void SetTextRumus(string name)
     {
+        
         if (RumusText == null)
         {
+            Debug.Log(RumusText.gameObject.name);
             Debug.LogError("RumusText belum di-assign di Inspector!");
             return;
         }

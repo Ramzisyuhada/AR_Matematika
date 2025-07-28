@@ -17,6 +17,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Resources/Scane/AR.unity
     guid: 9a64509c721403c419861aeef4d312a1
+  - enabled: 1
+    path: Assets/Resources/Scane/Angket.unity
+    guid: 6e8ef2d92e7a11b4c9d3f46a74180295
   m_configObjects:
     com.unity.adaptiveperformance.google.android.provider_settings: {fileID: 11400000,
       guid: e9c77a55a5e827c4e94df9cb72d84292, type: 2}
