@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Default Android
   m_EditorClassIdentifier: 
   buildApplication: 1
-  buildTarget: 13
+  buildTarget: 9
   productName: ARMatematika
   companyName: DefaultCompany
   applicationIdentifier: com.DefaultCompany.AR_PANIO

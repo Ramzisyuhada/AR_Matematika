@@ -23,6 +23,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Resources/Scane/Pilihan Materi.unity
     guid: 1a6aa798161fd3d46b122b068839efb6
+  - enabled: 1
+    path: Assets/Resources/Scane/Latihan.unity
+    guid: 559854d2dc57b624bbea2f1ac00b3cf5
+  - enabled: 1
+    path: Assets/Resources/Scane/Pilihan Latihan.unity
+    guid: 46f03939a0efd414d85d3544e9e5f209
   m_configObjects:
     com.unity.adaptiveperformance.google.android.provider_settings: {fileID: 11400000,
       guid: e9c77a55a5e827c4e94df9cb72d84292, type: 2}

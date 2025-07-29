@@ -17,7 +17,7 @@ public class Coklat : MonoBehaviour
     [SerializeField] GameObject Particle;
     private void Start()
     {
-        StartCoroutine(Animasi());
+       // StartCoroutine(Animasi());
     }
 
     private IEnumerator Animasi()
