@@ -14,8 +14,9 @@ public class SoalManager : MonoBehaviour
     [SerializeField] RawImage NoSoal;
     [SerializeField] GameObject Tabel;
     [SerializeField] GameObject Pertanyaan;
-
-    int IndexSoal = 0;
+    [SerializeField] GameObject ButtonSumbit;
+    [SerializeField] TMP_Text TextButton;
+    public int IndexSoal = 0;
     public GameObject ButtomSheet;
     Vector3 ukuranAwal;
     public GameObject targetObjek;
@@ -30,25 +31,49 @@ public class SoalManager : MonoBehaviour
         NoSoal.texture = Soal[IndexSoal].NoSoal.texture;
         TextPertanyaan.text = Soal[IndexSoal].Pertanyaan;
         Tabel.SetActive(false);
+        ButtonSumbit.SetActive(false);
+
 
         //NextSoal();
     }
     public void NextSoal()
     {
-        if(IndexSoal < 2) IndexSoal++;
+         ButtonSumbit.SetActive(true);
+        TextButton.text = "Submit";
 
-        if (IndexSoal == 2)
+        if (IndexSoal <= 4) IndexSoal++;
+        if (IndexSoal == 3)
         {
-            IndexSoal++;
-            TextPertanyaan.text = Soal[IndexSoal].Pertanyaan;
-
-            Tabel.SetActive(true);
-            Pertanyaan.transform.SetSiblingIndex(1);
-            NoSoal.gameObject.SetActive(false);
-            return;
+            ButtonSumbit.SetActive(false);
+            TextButton.text = "Next";
         }
-        if(Soal[IndexSoal].NoSoal.texture != null) NoSoal.texture = Soal[IndexSoal].NoSoal.texture;
-        TextPertanyaan.text = Soal[IndexSoal].Pertanyaan;
+        if (IndexSoal == 4)
+        {
+            TextButton.text = "Next";
+
+            //TextPertanyaan.text = Soal[IndexSoal].Pertanyaan;
+            ButtonSumbit.SetActive(false);
+            Tabel.SetActive(true);
+            Tabel.transform.SetSiblingIndex(1);
+            Pertanyaan.SetActive(false);
+            //IndexSoal++;
+
+        }
+        else if (IndexSoal >= 4)
+        {
+            Tabel.SetActive(false);
+            Pertanyaan.SetActive(true   );
+
+        }
+
+        if ( IndexSoal < 3) NoSoal.texture = Soal[IndexSoal].NoSoal.texture;
+        if(IndexSoal < 4) TextPertanyaan.text = Soal[IndexSoal].Pertanyaan;
+        if (IndexSoal == 5)
+        {
+            TextPertanyaan.text = Soal[4].Pertanyaan;
+            TextButton.text = "Submit";
+
+        }
     }
 
     public void JalankanSkenario1()
