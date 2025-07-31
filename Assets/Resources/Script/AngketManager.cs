@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -16,7 +17,10 @@ public class AngketManager : MonoBehaviour
     [SerializeField] TMP_Text C;
     [SerializeField] TMP_Text Nomer;
     [SerializeField] TMP_Text HasilText;
+    [SerializeField] TMP_Text HasilText2;
 
+    [SerializeField] RawImage IconHasil;
+    [SerializeField] private RawImage[] iconImage;
 
     [Header("Game Object")]
     [SerializeField] private GameObject ListTutorial;
@@ -26,6 +30,8 @@ public class AngketManager : MonoBehaviour
     [SerializeField] private GameObject PrevObject;
     [SerializeField] private GameObject NextObject;
     [SerializeField] private GameObject MulaiObject;
+    [SerializeField] private GameObject HasilButton;
+
 
     [SerializeField] private GameObject HasilBackground;
     [SerializeField] private GameObject Sumbit;
@@ -35,6 +41,8 @@ public class AngketManager : MonoBehaviour
     [Header("Icon Opsi Dropdown")]
     [SerializeField] private Sprite[] opsiIcons; // 3 gambar sesuai urutan "1", "2", "3"
 
+
+    private string Akhir = "";
     private bool MulaiAngket;
     private string[] semuaOpsi = { "1", "2", "3" };
     private string[] jawabanDipilih = new string[3];
@@ -345,6 +353,12 @@ public class AngketManager : MonoBehaviour
     {
         SimpanJawabanSaatIni();
         HasilBackground.SetActive(true);
+        Header.SetActive(false);
+        ListJawaban.SetActive(false);
+        Sumbit.SetActive(false);
+        PrevObject.SetActive(false);
+        HasilButton.SetActive(true);
+
         int visual = 0, auditori = 0, kinestetik = 0;
 
         for (int i = 0; i < angket.PertanyaanList.Count; i++)
@@ -365,19 +379,32 @@ public class AngketManager : MonoBehaviour
         }
 
         string hasil = GetKesimpulanGayaBelajar(visual, auditori, kinestetik);
-        HasilText.text = "Kesimpulan Gaya Belajar: " + hasil;
+        HasilText.text = hasil+ " " + Akhir;
         Debug.Log($"Visual: {visual}, Auditori: {auditori}, Kinestetik: {kinestetik}");
         Debug.Log("Kesimpulan Gaya Belajar: " + hasil);
     }
-
+    
     string GetKesimpulanGayaBelajar(int visual, int auditori, int kinestetik)
     {
         List<string> dominan = new List<string>();
         int max = Mathf.Max(visual, auditori, kinestetik);
-        if (visual == max) dominan.Add("Visual");
-        if (auditori == max) dominan.Add("Auditori");
-        if (kinestetik == max) dominan.Add("Kinestetik");
+        if (visual == max)
+        {
+            dominan.Add("Visual");
+            Akhir = "yang efektif dengan melihat gambar, warna, diagram, atau video.";
+        }
+        if(auditori == max){
+                dominan.Add("Auditori");
+            Akhir = "yang efektif dengan mendengarkan dan berdiskusi.";
+            }
+        if (kinestetik == max)
+        {
+            dominan.Add("Kinestetik");
+            Akhir = "yang efektif dengan bergerak, menyentuh, dan praktik langsung.";
+        }
 
+        
+        HasilText2.text = dominan[0];
         return dominan.Count == 1 ?
             $"Gaya belajar Anda dominan adalah {dominan[0]}." :
             $"Gaya belajar Anda bersifat campuran: {string.Join(" - ", dominan)}.";
