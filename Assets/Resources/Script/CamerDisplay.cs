@@ -1,125 +1,109 @@
-using Kamgam.MeshExtractor;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement; // Pindahkan ke sini
+using Vuforia;
 
-#if UNITY_ANDROID
-using UnityEngine.Android;
-#endif
-
-public class CamerDisplay : MonoBehaviour
+public class VuforiaToRawImage : MonoBehaviour
 {
+    [Header("UI Target")]
+    [Tooltip("RawImage (UI) yang akan menampilkan feed kamera Vuforia")]
+    public RawImage targetRawImage;   // drag RawImage kotak putih
 
+    [Header("Behaviour")]
+    [Tooltip("Berapa detik maksimal menunggu texture kamera siap")]
+    public float waitTimeoutSeconds = 10f;
 
+    private Texture vuforiaTex;
+    private bool subscribed;
 
-    public RawImage rawImage; 
-    public Texture2D backgroundTexture; 
-    private WebCamTexture webcamTexture;
-    public void Mulai()
+    private void OnEnable()
     {
-        if (webcamTexture != null && webcamTexture.isPlaying)
+        if (!targetRawImage)
         {
-            webcamTexture.Stop();
-        }
-        Destroy(gameObject);
-        SceneManager.LoadScene("Home Screen");
-
-    }
-
-    void Start()
-    {
-#if UNITY_ANDROID
-        if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
-        {
-            Permission.RequestUserPermission(Permission.Camera);
+            Debug.LogError("[VuforiaToRawImage] targetRawImage belum di-assign.");
+            enabled = false;
             return;
         }
-#endif
-        if (SceneManager.GetActiveScene().name != "Home Screen")
-        {
-            StartCamera();
-        }
-        else
-        {
-            // Ganti ke background gambar statis
-            if (backgroundTexture != null)
-            {
-                rawImage.texture = backgroundTexture;
-                rawImage.material.mainTexture = backgroundTexture;
-            }
-        }
+
+        targetRawImage.texture = null;
+        StartCoroutine(BindWhenReady());
     }
 
-    void OnDisable()
+    private void OnDisable()
     {
-        StopCamera();
+        // Lepas event bila ada
+        var vb = VuforiaBehaviour.Instance;
+        if (vb != null && vb.VideoBackground != null && subscribed)
+        {
+            vb.VideoBackground.OnVideoBackgroundChanged -= OnVideoBackgroundChanged;
+            subscribed = false;
+        }
+        // Jangan sentuh kamera (Vuforia 10.x mengelola sendiri)
+        vuforiaTex = null;
+        if (targetRawImage) targetRawImage.texture = null;
     }
 
-    void OnDestroy()
+    private IEnumerator BindWhenReady()
     {
-        StopCamera();
+        // 1) Tunggu ARCamera (VuforiaBehaviour) muncul
+        float t = 0f;
+        while (VuforiaBehaviour.Instance == null && t < waitTimeoutSeconds)
+        {
+            t += Time.deltaTime;
+            yield return null;
+        }
+        if (VuforiaBehaviour.Instance == null)
+        {
+            Debug.LogError("[VuforiaToRawImage] VuforiaBehaviour tidak ditemukan di scene.");
+            yield break;
+        }
+
+        // 2) Subscribe event perubahan video background (jika tersedia)
+        var vb = VuforiaBehaviour.Instance;
+        if (vb.VideoBackground != null && !subscribed)
+        {
+            vb.VideoBackground.OnVideoBackgroundChanged += OnVideoBackgroundChanged;
+            subscribed = true;
+        }
+
+        // 3) Coba pasang texture sekarang (atau menunggu sampai ada)
+        yield return StartCoroutine(TrySetTextureLoop());
     }
 
-    void StopCamera()
+    private IEnumerator TrySetTextureLoop()
     {
-        if (webcamTexture != null && webcamTexture.isPlaying)
+        float t = 0f;
+        while (t < waitTimeoutSeconds)
         {
-            webcamTexture.Stop();
+            if (TrySetTextureOnce()) yield break; // sukses
+            t += Time.deltaTime;
+            yield return null;
         }
-
-        // Ganti rawImage ke background statis
-        if (backgroundTexture != null)
-        {
-            rawImage.texture = backgroundTexture;
-            rawImage.material.mainTexture = backgroundTexture;
-        }
+        Debug.LogWarning("[VuforiaToRawImage] Timeout: texture kamera belum tersedia.");
     }
 
-    void StartCamera()
+    // Dipanggil saat VideoBackground berubah
+    private void OnVideoBackgroundChanged()
     {
-        WebCamDevice[] devices = WebCamTexture.devices;
-
-        for (int i = 0; i < devices.Length; i++)
-        {
-            if (!devices[i].isFrontFacing)
-            {
-                webcamTexture = new WebCamTexture(devices[i].name);
-                break;
-            }
-        }
-
-        if (webcamTexture == null && devices.Length > 0)
-        {
-            webcamTexture = new WebCamTexture(devices[0].name);
-        }
-
-        if (webcamTexture != null)
-        {
-            webcamTexture.Play();
-            rawImage.texture = webcamTexture;
-            rawImage.material.mainTexture = webcamTexture;
-            //SetRawImageStretchLeft();
-        }
+        TrySetTextureOnce();
     }
 
-    void SetRawImageStretchLeft()
+    // Mengembalikan true bila sukses memasang texture
+    private bool TrySetTextureOnce()
     {
-        RectTransform rect = rawImage.GetComponent<RectTransform>();
+        var vb = VuforiaBehaviour.Instance;
+        if (vb == null || vb.VideoBackground == null) return false;
 
-        // Anchor stretch vertikal di kiri
-        rect.anchorMin = new Vector2(0f, 0f);
-        rect.anchorMax = new Vector2(0f, 1f);
-        rect.pivot = new Vector2(0f, 0.5f);
+        var tex = vb.VideoBackground.VideoBackgroundTexture;
+        if (tex == null || tex.width <= 0 || tex.height <= 0) return false;
 
-        float panelWidth = 400f; 
-        rect.sizeDelta = new Vector2(panelWidth, 0f); 
-        rect.anchoredPosition = Vector2.zero;
-    }
-
-    void Update()
-    {
-        
+        if (vuforiaTex != tex)
+        {
+            vuforiaTex = tex;
+            targetRawImage.texture = vuforiaTex;
+            // Catatan: RawImage tidak punya preserveAspect; atur ukuran via layout/anchors.
+            Debug.Log($"[VuforiaToRawImage] Set RawImage ke video {tex.width}x{tex.height}");
+        }
+        return true;
     }
 }
