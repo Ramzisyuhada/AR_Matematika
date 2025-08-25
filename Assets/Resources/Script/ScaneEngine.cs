@@ -8,6 +8,7 @@ public class ScaneEngine : MonoBehaviour
     [SerializeField] AudioSource click;
     public void Scane(string name)
     {
+
         StartCoroutine(PlaySoundAndLoadScene(name));
 
     }
@@ -20,6 +21,19 @@ public class ScaneEngine : MonoBehaviour
         SceneManager.LoadScene(sceneName);
     }
 
+    public void Scane1(string name)
+    {
+        if (name == "Latihan")
+        {
+            PlayerPrefs.SetString("SubmissionId", "S001");
+            PlayerPrefs.SetString("assessment_id", "A_001");
 
+            PlayerPrefs.Save();
+        }           
+
+        PlayerPrefs.Save();
+        StartCoroutine(PlaySoundAndLoadScene(name));
+
+    }
 
 }

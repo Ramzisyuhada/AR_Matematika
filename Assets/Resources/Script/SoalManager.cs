@@ -16,6 +16,7 @@ public class SoalManager : MonoBehaviour
     [SerializeField] GameObject Pertanyaan;
     [SerializeField] GameObject ButtonSumbit;
     [SerializeField] TMP_Text TextButton;
+
     public int IndexSoal = 0;
     public GameObject ButtomSheet;
     Vector3 ukuranAwal;

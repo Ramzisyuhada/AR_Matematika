@@ -58,4 +58,13 @@ public class GradeVM : MonoBehaviour
         string url = endpoints.userByQuery.Replace("{id}", UnityWebRequest.EscapeURL(path));
         yield return apiClient.GetById(url, onJson, onErr);
     }
+    public IEnumerator LoadAllGrade(Action<string> onJson, Action<string> onErr)
+    {
+        yield return apiClient.Get( onJson, onErr);
+
+    }
+    public IEnumerator Post(string jsonBody, Action<string> onJson, Action<string> onErr)
+    {
+        yield return apiClient.Post(endpoints.Post, jsonBody, onJson, onErr);
+    }
 }

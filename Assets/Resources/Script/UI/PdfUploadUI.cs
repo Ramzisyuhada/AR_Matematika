@@ -2,6 +2,14 @@
 using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
+using static UnityEditor.Profiling.HierarchyFrameDataView;
+using Unity.VisualScripting;
+using Newtonsoft.Json;
+using UnityEngine.SceneManagement;
+
+
+
+
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -13,6 +21,8 @@ public class PdfUploadUI : MonoBehaviour
     public Button btnBukaFile;
     public Button btnUpload;
     public Text infoText; // boleh ganti TextMeshProUGUI jika pakai TMP
+    [Header("Logic")]
+    [SerializeField] private AnswerVM ViewModel;
 
     [Header("Limit")]
     public int maxSizeMB = 5;
@@ -85,7 +95,39 @@ public class PdfUploadUI : MonoBehaviour
         client.UploadPdfBytes(selectedBytes, selectedName, s3key =>
         {
             UpdateInfo("✅ Upload OK → " + s3key);
-            btnUpload.interactable = true;
+            client.GetDownloadLink(s3key, presignUrl =>
+            {
+                // Tampilkan URL ke user
+                UpdateInfo($"✅ Upload OK\nDownload: {presignUrl}");
+
+                string jsonBody = JsonConvert.SerializeObject(new
+                {
+                    submission_id = "S001",
+                    question_id = "Q004",
+                    answer_text = presignUrl
+                });
+
+                StartCoroutine(ViewModel.PostAnswer(jsonBody, onJson: res =>
+                {
+                    Debug.Log("Presigned URL: " + presignUrl);
+                    btnUpload.interactable = true;
+                    SceneManager.LoadScene("Home");
+
+
+                }, onErr: Err =>
+                {
+                    Debug.LogWarning("Error : " + Err);
+
+                }));
+
+
+
+            },
+      err =>
+      {
+          UpdateInfo("Upload OK, tapi gagal ambil link: " + err);
+          btnUpload.interactable = true;
+      });
         },
         err =>
         {

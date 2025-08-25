@@ -225,4 +225,27 @@ public class PdfPresignClient : MonoBehaviour
     {
         Debug.Log("[PdfPresignClient] backendBase=" + backendBase + " platform=" + Application.platform);
     }
+
+    public void GetDownloadLink(string s3Key, Action<string> onOk, Action<string> onErr)
+    {
+        if (string.IsNullOrWhiteSpace(s3Key)) { onErr?.Invoke("key kosong"); return; }
+        if (!s3Key.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)) { onErr?.Invoke("Key harus .pdf"); return; }
+
+        var url = JoinUrl(backendBase, "presign/download");
+        var body = "{\"key\":\"" + JsonEscape(s3Key) + "\"}";
+        Debug.Log($"[POST] {url} body={body}");
+
+        StartCoroutine(PostJson(url, body, json =>
+        {
+            var presignUrl = GetJsonString(json, "url");
+            if (string.IsNullOrEmpty(presignUrl))
+            {
+                onErr?.Invoke("Respon presign tidak valid: " + json);
+                return;
+            }
+            onOk?.Invoke(presignUrl);
+        },
+        e => onErr?.Invoke("Presign failed: " + e)));
+    }
+
 }

@@ -41,7 +41,7 @@ public class AngketManager : MonoBehaviour
     [Header("Icon Opsi Dropdown")]
     [SerializeField] private Sprite[] opsiIcons; // 3 gambar sesuai urutan "1", "2", "3"
 
-
+    [SerializeField] UsersView usersView;
     private string Akhir = "";
     private bool MulaiAngket;
     private string[] semuaOpsi = { "1", "2", "3" };
@@ -405,8 +405,12 @@ public class AngketManager : MonoBehaviour
 
         
         HasilText2.text = dominan[0];
+
+        usersView.SetAngket(dominan[0]);
         return dominan.Count == 1 ?
             $"Gaya belajar Anda dominan adalah {dominan[0]}." :
             $"Gaya belajar Anda bersifat campuran: {string.Join(" - ", dominan)}.";
+
+
     }
 }

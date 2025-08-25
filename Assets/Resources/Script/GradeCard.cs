@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using SimpleJSON;
 using System;
+using System.Globalization; // ⬅️ tambah ini
 
 public class GradeCard : MonoBehaviour
 {
@@ -30,9 +31,15 @@ public class GradeCard : MonoBehaviour
     public event Action<string> OnOpenDetail;     // kirim submissionId (umumnya buat detail)
     public event Action<string, float> OnUpdateClicked; // (gradeId, nilai) kalau dipakai
 
+
+    private string displayName;
+private string displayGender;
+private float displayScore;
+private Texture displayAvatar;
     // Simpan ID yang relevan
     public string GradeId { get; private set; } // biasanya "grade_id"
     public string SubmissionId { get; private set; } // biasanya "submission_id"
+    public string UserIdentifier { get; private set; } // tambah property
 
     private void Awake()
     {
@@ -50,15 +57,16 @@ public class GradeCard : MonoBehaviour
 
     public void Bind(JSONNode item, Texture2D[] iconSet)
     {
+        Debug.Log("Hello Ini Data : " + item.ToString());
         if (item == null)
         {
             Debug.LogWarning("[GradeCard] Bind dipanggil dengan item null.");
             return;
         }
 
-        // Ambil ID aman (utamakan grade_id untuk update, submission_id untuk detail)
         GradeId = item["grade_id"]?.Value ?? item["id"]?.Value ?? "";
         SubmissionId = item["submission_id"]?.Value ?? "";
+        UserIdentifier = item["user_identifier"]?.Value ?? item["user"]?["user_identifier"]?.Value ?? "";
 
         // Data user
         var user = item["user"];
@@ -70,7 +78,7 @@ public class GradeCard : MonoBehaviour
             gender.Equals("male", StringComparison.OrdinalIgnoreCase) ||
             gender.Equals("l", StringComparison.OrdinalIgnoreCase);
 
-        // Ikon aman
+        // Ikon
         int iconIndex = isMale ? 0 : 1;
         if (iconSet != null && iconSet.Length > 0)
         {
@@ -80,11 +88,13 @@ public class GradeCard : MonoBehaviour
 
         if (nama != null) nama.text = name;
 
-        // Nilai
-        float score = item["score"].AsFloat; // default 0 kalau kosong
-        if (nilai != null) nilai.text = score.ToString("0.##");
-
-        // Warna nilai + kondisi (aman jika parsing gagal)
+        // ⬇️ PARSE SCORE DENGAN INVARIANT
+        float score = ParseFloatInvariant(item["score"]?.Value);
+        if (nilai != null) nilai.text = score.ToString("0.##", CultureInfo.InvariantCulture);
+        displayName = name;
+        displayGender = gender;
+        displayScore = score;
+        // Warna nilai + kondisi
         if (warnaBGNilai != null)
         {
             Color c = score <= 0f
@@ -104,26 +114,54 @@ public class GradeCard : MonoBehaviour
         }
     }
 
+    private static float ParseFloatInvariant(string s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return 0f;
+        // Coba invariant dulu (untuk "23.00")
+        if (float.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var f)) return f;
+        // Coba ganti koma/titik
+        if (float.TryParse(s.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out f)) return f;
+        if (float.TryParse(s.Replace('.', ','), NumberStyles.Float, CultureInfo.GetCultureInfo("id-ID"), out f)) return f;
+        // Terakhir: current culture (fallback)
+        if (float.TryParse(s, NumberStyles.Float, CultureInfo.CurrentCulture, out f)) return f;
+        return 0f;
+    }
+
     // Klik pada card (atau tombol di card)
     private void OnCardClicked()
     {
-        Debug.Log(transform.parent.root.gameObject.name);
+        // Atur panel-panelmu seperti sebelumnya...
         transform.parent.parent.parent.gameObject.SetActive(false);
         transform.parent.parent.parent.parent.GetChild(4).gameObject.SetActive(true);
         transform.parent.parent.parent.parent.GetChild(1).gameObject.SetActive(false);
-        // Untuk buka detail jawaban, umumnya pakai submissionId
-        string idForDetail = !string.IsNullOrEmpty(SubmissionId) ? SubmissionId : GradeId;
+        Debug.Log($"[Klik] grade={GradeId}, submission={SubmissionId}, user={UserIdentifier}");
 
+        if (View == null)
+        {
+            Debug.LogError("[GradeCard] AnswerView belum di-init. Panggil card.Init(answerView) saat spawn.");
+            return;
+        }
+        View.PrefillHeaderFromGrade(
+    displayName,
+    displayGender,
+    displayScore,
+    displayAvatar
+);
+        string idForDetail = !string.IsNullOrEmpty(SubmissionId) ? SubmissionId : GradeId;
         if (!string.IsNullOrEmpty(idForDetail))
         {
-            View = transform.parent.root.gameObject.GetComponent<AnswerView>();
-            Debug.Log($"[GradeCard] OpenDetail id={idForDetail}");
+            Debug.Log($"[GradeCard] OpenDetail submission={SubmissionId}, grade={GradeId}");
             View.ShowDetail(SubmissionId, GradeId);
-
         }
         else
         {
             Debug.LogWarning("[GradeCard] Tidak ada id untuk dibuka (SubmissionId & GradeId kosong).");
         }
     }
+
+    public void Init(AnswerView view)
+    {
+        View = view;
+    }
+
 }

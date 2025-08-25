@@ -1,7 +1,9 @@
+﻿using Newtonsoft.Json;
 using SimpleJSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using TMPro;
 using Unity.Burst.Intrinsics;
 using UnityEngine;
@@ -13,6 +15,7 @@ public class AnswerView : MonoBehaviour
     [Header("Logic")]
     [SerializeField] private AnswerVM ViewModel;
     [SerializeField] private GradeVM ViewModel1;
+    [SerializeField] private SubmissionsView ViewModel3;
 
     [SerializeField] private GradeCard nilai;
     [Header("UI Root")]
@@ -29,14 +32,202 @@ public class AnswerView : MonoBehaviour
     [SerializeField] private GameObject ScrollView;
     [SerializeField] private GameObject PreviewNilai;
 
+    [Header("Siswa")]
+    [SerializeField] private GameObject UploadFile;
+    [SerializeField] private GameObject Canvas1;
+    [SerializeField] private GameObject Canvas2;
+
+
+    [SerializeField] private TMP_InputField InputJawaban;
+
     [Header("Assets")]
     [SerializeField] private Texture2D[] Icon;
 
+    [Header("Identikas  Soal")]
+    private string SubmissionId;
+    private string QuestionId;
 
-   private string LinkDownload;
+
+    private string LinkDownload;
 
     private string Nilai;
 
+    private int NoSoal = 1;
+    private bool isSubmitting = false;
+    private bool isFinalized = false;
+
+
+
+    private string GradeIdUntukUpdate;      
+
+    // ====== PENAMBAH ======
+    [System.Serializable]
+
+    private class PendingAnswer
+    {
+        public string submission_id;
+        public string question_id;
+        public string answer_text;
+    }
+
+    public void PrefillHeaderFromGrade(string name, string gender, float score, Texture avatar)
+    {
+        if (UsernameHead != null) UsernameHead.text = name ?? "(tanpa nama)";
+        if (Username != null) Username.text = name ?? "(tanpa nama)";
+
+        // Profil (kalau disediakan)
+        if (Profile != null && avatar != null) Profile.texture = avatar;
+
+        // Gaya belajar (kalau string ini diisi dari API lain, set placeholder dulu)
+        if (GayaBelajar != null)
+        {
+            // Placeholder: "-" dulu, nanti bisa ditimpa setelah fetch user detail
+            GayaBelajar.text = "-";
+        }
+
+        // Nilai (kalau punya header nilai)
+        //if (NilaiText != null)
+        //    NilaiText.text = score.ToString("0.##", CultureInfo.InvariantCulture);
+    }
+
+    // penampung semua jawaban sampai final submit
+    private readonly List<PendingAnswer> pendingAnswers = new List<PendingAnswer>();
+    private void Start()
+    {
+        SubmissionId = PlayerPrefs.GetString("SubmissionId", "S001");
+        QuestionId = PlayerPrefs.GetString("QuestionId", "Tidak Ada");
+
+    }
+    // Panggil ini saat user klik Next (soal 1 -> 2 -> 3)
+    public void SaveCurrentAnswer()
+    {
+        if (InputJawaban == null || string.IsNullOrWhiteSpace(InputJawaban.text))
+        {
+            Debug.LogWarning("[SaveCurrentAnswer] Input jawaban kosong.");
+            return;
+        }
+        if (string.IsNullOrEmpty(SubmissionId))
+        {
+            Debug.LogWarning("[SaveCurrentAnswer] (info) SubmissionId belum ada (akan dibuat saat final).");
+        }
+
+        // Simpan jawaban untuk soal saat ini
+        int currentIndex = NoSoal;                       // simpan nomor saat ini (1..3)
+        string qid = "Q" + currentIndex.ToString("000"); // Q001/Q002/Q003
+
+        int existing = pendingAnswers.FindIndex(p => p.question_id == qid);
+        var payload = new PendingAnswer
+        {
+            submission_id = "",                          // diisi nanti setelah PostSubs
+            question_id = qid,
+            answer_text = InputJawaban.text.Trim()
+        };
+        if (existing >= 0) pendingAnswers[existing] = payload;
+        else pendingAnswers.Add(payload);
+
+        Debug.Log($"[SaveCurrentAnswer] cached {qid}: {payload.answer_text}");
+
+        // Kosongkan input untuk UX rapi
+        InputJawaban.text = string.Empty;
+
+        // Jika ini jawaban ke-3 -> langsung finalize (buat submission + kirim semua)
+        if (currentIndex == 3)
+        {
+            if (!isSubmitting && !isFinalized)
+            {
+                // Tampilkan UI upload kalau perlu
+                if (UploadFile) UploadFile.SetActive(true);
+                if (Canvas1) Canvas1.SetActive(false);
+                if (Canvas2) Canvas2.SetActive(false);
+
+            }
+            return;
+        }
+
+        // Kalau masih soal 1 atau 2, lanjutkan ke nomor berikutnya
+        NoSoal = currentIndex + 1;
+    }
+
+
+    // Panggil ini saat user klik Final (setelah 3 soal)
+    public void FinalSubmitAnswers()
+    {
+        if (isSubmitting || isFinalized)
+        {
+            Debug.LogWarning("[FinalSubmitAnswers] Sudah dalam proses / sudah finalize.");
+            return;
+        }
+        if (pendingAnswers.Count == 0)
+        {
+            Debug.LogWarning("[FinalSubmitAnswers] Tidak ada jawaban yang disimpan.");
+            return;
+        }
+        StartCoroutine(RunSequentially());
+    }
+
+    public IEnumerator RunSequentially()
+    {
+        isSubmitting = true;
+        string newSubmissionId = null;
+
+        // Buat submission baru
+        yield return StartCoroutine(ViewModel3.PostSubs(id => {
+            newSubmissionId = id;
+        }));
+
+        if (string.IsNullOrEmpty(newSubmissionId))
+        {
+            isSubmitting = false;
+            Debug.LogError("[RunSequentially] Gagal membuat submission, hentikan proses.");
+            yield break;
+        }
+
+        SubmissionId = newSubmissionId;
+        PlayerPrefs.SetString("SubmissionId", SubmissionId);
+        PlayerPrefs.Save();
+
+        // Isi submission_id untuk semua jawaban
+        for (int i = 0; i < pendingAnswers.Count; i++)
+            pendingAnswers[i].submission_id = SubmissionId;
+
+        // Kirim semua jawaban
+        yield return StartCoroutine(PostAllSequentially());
+
+        isSubmitting = false;
+        isFinalized = true;
+    }
+
+
+    private System.Collections.IEnumerator PostAllSequentially()
+    {
+        for (int i = 0; i < pendingAnswers.Count; i++)
+        {
+            string body = JsonConvert.SerializeObject(pendingAnswers[i]);
+            bool done = false;
+            bool ok = false;
+            string errMsg = null;
+
+            yield return StartCoroutine(ViewModel.PostAnswer(
+                body,
+                onJson: res => { ok = true; done = true; Debug.Log($"  ✓ Submit {pendingAnswers[i].question_id} OK"); },
+                onErr: err => { ok = false; done = true; errMsg = err; Debug.LogWarning($"  ✗ Submit {pendingAnswers[i].question_id} GAGAL: {err}"); }
+            ));
+
+            // tunggu callback (kalau implementasi ViewModel kamu langsung meng-invoke callback, flag ini sudah true)
+            while (!done) yield return null;
+
+            if (!ok)
+            {
+                Debug.LogError("[FinalSubmitAnswers] Dihentikan karena ada error.");
+                yield break;
+            }
+        }
+
+        // Bersihkan cache & reset state jika perlu
+        pendingAnswers.Clear();
+        NoSoal = 1;
+        InputJawaban.text = string.Empty;
+    }
 
     public void ShowDetail(string gradeId,string nilai)
     {
@@ -53,7 +244,7 @@ public class AnswerView : MonoBehaviour
             onJson: (json) =>
             {
                 var root = JSON.Parse(json);
-                if (root == null) { Debug.LogError("JSON null"); return; }
+                if (root == null) { Debug.LogError("JSON null"); return; }  
 
                 JSONArray arr = null;
                 if (root.IsArray)
@@ -161,8 +352,10 @@ public class AnswerView : MonoBehaviour
 
     public void PostNilai()
     {
+
         if (float.TryParse(IsiNilai.text, out float nilaiFloat))
         {
+
             StartCoroutine(ViewModel1.UpdateGrade(
                 Nilai,
                 nilaiFloat,

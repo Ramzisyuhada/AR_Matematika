@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 605b799717258734c943f321462da36c, type: 3}
-  m_Name: Grade
+  m_Name: Submissions
   m_EditorClassIdentifier: 
   baseUrl: http://127.0.0.1:8000/api/
-  getById: grades/{id}
+  getById: submissions/{id}/{}
   update: grades/{id}
   getBy: grades
-  Post: grades
+  Post: submissions
   userByQuery: grades?assessment_id={id}
   answersBySubmission: /api/answers?submission_id={id}
-  putById: /users/{id}/gayabelajar
+  putById: users/{id}/gayabelajar

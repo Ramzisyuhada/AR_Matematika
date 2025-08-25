@@ -16,5 +16,6 @@ MonoBehaviour:
   getById: answers/{id}
   update: grades/{id}
   getBy: grades
+  Post: answers
   userByQuery: grades?assessment_id={id}
   answersBySubmission: /api/answers?submission_id={id}
