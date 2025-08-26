@@ -9,7 +9,7 @@ using UnityEngine.UI;
 public class APIManager : MonoBehaviour
 {
     [Header("API")]
-    [SerializeField] private string apiUrl = "http://127.0.0.1:8000/api/login";
+    [SerializeField] private string apiUrl = "https://107-23-209-11.nip.io/api/login";
 
     [Header("UI References")]
     [SerializeField] private TMP_InputField userIdentifierInput;

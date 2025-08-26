@@ -67,9 +67,11 @@ private Texture displayAvatar;
             btn.onClick.RemoveListener(OnCardClicked);
     }
     JSONNode datas;
-    public void Bind(JSONNode item, Texture2D[] iconSet)
+    string Assesment = "A_001";
+    public void Bind(JSONNode item, Texture2D[] iconSet,string Assesment)
     {
         Debug.Log("Hello Ini Data : " + item.ToString());
+        this.Assesment = Assesment;
         if (item == null)
         {
             Debug.LogWarning("[GradeCard] Bind dipanggil dengan item null.");
@@ -164,16 +166,27 @@ private Texture displayAvatar;
         Debug.Log($"{CardTag} OnCardClicked sub='{sid}' assess='{asid}' view='{(View ? View.GetInstanceID().ToString() : "null")}'");
 
         nama.text = displayName;
-        View.PrefillHeaderFromGradev3(
-    displayName,
-    displayGender,
-    displayScore,
-    displayAvatar,
-   
-    UserIdentifier,
-    datas
+        View.SetAssesment(
+displayName,
+displayGender,
+displayScore,
+displayAvatar,
+
+UserIdentifier,
+datas,
+Assesment
 
 );
+//        View.PrefillHeaderFromGradev3(
+//    displayName,
+//    displayGender,
+//    displayScore,
+//    displayAvatar,
+   
+//    UserIdentifier,
+//    datas
+
+//);
         string idForDetail = !string.IsNullOrEmpty(SubmissionId) ? SubmissionId : GradeId;
         if (!string.IsNullOrEmpty(idForDetail))
         {

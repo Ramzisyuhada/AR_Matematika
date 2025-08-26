@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 605b799717258734c943f321462da36c, type: 3}
   m_Name: Submissions
   m_EditorClassIdentifier: 
-  baseUrl: http://127.0.0.1:8000/api/
+  baseUrl: https://107-23-209-11.nip.io/api/
   getById: submissions/{id}/{}
   update: grades/{id}
   getBy: grades
@@ -20,3 +20,4 @@ MonoBehaviour:
   userByQuery: grades?assessment_id={id}
   answersBySubmission: /api/answers?submission_id={id}
   putById: users/{id}/gayabelajar
+  geytById1: answers/by-submission/{idsub}?assessment_id={asid}

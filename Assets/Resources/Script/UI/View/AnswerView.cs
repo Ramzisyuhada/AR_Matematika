@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using TMPro;
 using Unity.Burst.Intrinsics;
 using UnityEngine;
@@ -31,6 +32,9 @@ public class AnswerView : MonoBehaviour
     [SerializeField] private TMP_InputField IsiNilai;
     [SerializeField] private GameObject ScrollView;
     [SerializeField] private GameObject PreviewNilai;
+    [SerializeField] private GameObject JawabanSoal1Object;
+    [SerializeField] private GameObject JawabanSoal2Object;
+    [SerializeField] private GameObject JawabanSoal3Object;
 
     [Header("Siswa")]
     [SerializeField] private GameObject UploadFile;
@@ -42,13 +46,14 @@ public class AnswerView : MonoBehaviour
 
     [Header("Assets")]
     [SerializeField] private Texture2D[] Icon;
+    [SerializeField] private PdfPresignClient presignClient; // drag dari Inspector
 
     [Header("Identikas  Soal")]
     private string SubmissionId;
     private string QuestionId;
 
 
-    private string LinkDownload;
+    private string s3Key;
 
     private string Nilai;
 
@@ -70,6 +75,161 @@ public class AnswerView : MonoBehaviour
         public string answer_text;
     }
 
+    public void SetAssesment(string name, string gender, float score, Texture avatar,
+      string userid, JSONNode item, string Assesment)
+    {
+        if (Assesment == "A_002")
+        {
+            // Sembunyikan jawaban 1-3
+            if (JawabanSoal1Object) JawabanSoal1Object.SetActive(false);
+            if (JawabanSoal2Object) JawabanSoal2Object.SetActive(false);
+            if (JawabanSoal3Object) JawabanSoal3Object.SetActive(false);
+
+            // Header dasar (nama/avatar)
+            if (UsernameHead) UsernameHead.text = name ?? "(tanpa nama)";
+            if (Username) Username.text = name ?? "(tanpa nama)";
+            if (Profile && avatar) Profile.texture = avatar;
+            if (GayaBelajar) GayaBelajar.text = "-";
+
+            userid = (userid ?? "").Trim();
+            string gradeId = item?["grade_id"]?.Value ?? item?["id"]?.Value ?? "";
+            string submissionId = item?["submission_id"]?.Value ?? "";
+            Nilai = gradeId;
+
+            string assessmentId = item?["submission"]?["assessment_id"]?.Value ?? "";
+            Debug.Log("Datas : " + item);
+            Debug.Log($"[AnswerView#{GetInstanceID()}] PrefillHeaderFromGrade (A_002) sub='{submissionId}' assess='{assessmentId}' user='{userid}'");
+
+            StartCoroutine(ViewModel.LoadAnswerById1(
+                submissionId,
+                assessmentId,
+                userid,
+                onJson: (json) =>
+                {
+                    var root = JSON.Parse(json);
+                    Debug.Log("[LoadAnswerById1 A_002] Response: " + root);
+                    if (root == null) { Debug.LogError("JSON null"); return; }
+
+                    JSONArray arr = null;
+                    if (root.IsArray) arr = root.AsArray;
+                    else if (root.IsObject)
+                    {
+                        if (root["data"] != null && root["data"].IsArray) arr = root["data"].AsArray;
+                        else if (root["items"] != null && root["items"].IsArray) arr = root["items"].AsArray;
+                    }
+
+                    if (arr == null || arr.Count == 0)
+                    {
+                        Debug.LogWarning("[AnswerView A_002] Data kosong / bukan array");
+                        // Kosongkan label file supaya jelas
+                        if (NamFile) NamFile.text = "-";
+                        return;
+                    }
+
+                    // --- Ambil info user untuk ikon ---
+                    var first = arr[0];
+                    string userName = "-";
+                    string userIdentifier = "-";
+                    string genderFromJson = "-";
+
+                    var submissionObj = first["submission"];
+                    if (submissionObj != null)
+                    {
+                        userIdentifier = submissionObj["user_identifier"]?.Value ?? "-";
+                        var userObj = submissionObj["user"];
+                        if (userObj != null)
+                        {
+                            userName = userObj["name"]?.Value ?? "-";
+                            genderFromJson = userObj["gender"]?.Value ?? "-";
+                        }
+                    }
+
+                    bool isMale =
+                        genderFromJson.Equals("laki-laki", StringComparison.OrdinalIgnoreCase) ||
+                        genderFromJson.Equals("male", StringComparison.OrdinalIgnoreCase) ||
+                        genderFromJson.Equals("l", StringComparison.OrdinalIgnoreCase);
+
+                    int iconIndex = isMale ? 0 : 1;
+                    if (Icon != null && Icon.Length > 0)
+                    {
+                        if (iconIndex < 0 || iconIndex >= Icon.Length) iconIndex = 0;
+                        if (Profile != null) Profile.texture = Icon[iconIndex];
+                    }
+
+                    if (UsernameHead) UsernameHead.text = string.IsNullOrEmpty(userName) ? userIdentifier : userName;
+                    if (Username) Username.text = string.IsNullOrEmpty(userName) ? userIdentifier : userName;
+
+                    // --- Kumpulkan jawaban: qNum -> text ---
+                    var answers = new System.Collections.Generic.Dictionary<int, string>();
+                    foreach (JSONNode node in arr)
+                    {
+                        int qNum = node?["question"]?["question_number"]?.AsInt ?? 0;
+                        string ans = node?["answer_text"]?.Value ?? "-";
+                        if (qNum >= 0) answers[qNum] = ans; // simpan juga qNum==0 kalau ada
+                    }
+
+                    // --- Pilih s3Key yang benar untuk A_002 ---
+                    // Prioritas: Q4 -> Q0 -> jawaban yang terlihat path/file
+                    string picked =
+                          (answers.ContainsKey(4) ? answers[4] : null)
+                       ?? (answers.ContainsKey(0) ? answers[0] : null)
+                       ?? FindLikelyPathValue(answers);
+
+                    s3Key = string.IsNullOrWhiteSpace(picked) ? "-" : picked;
+                    Debug.Log("[A_002] s3Key picked = " + s3Key);
+
+                    // Tampilkan nama file tanpa ekstensi
+                    string fileNameWithoutExt = "-";
+                    try
+                    {
+                        if (!string.IsNullOrWhiteSpace(s3Key) && s3Key != "-")
+                        {
+                            fileNameWithoutExt = Path.GetFileNameWithoutExtension(s3Key);
+                            if (string.IsNullOrWhiteSpace(fileNameWithoutExt))
+                                fileNameWithoutExt = s3Key; // fallback
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogWarning("Gagal parse nama file: " + e.Message);
+                    }
+
+                    if (NamFile) NamFile.text = string.IsNullOrWhiteSpace(fileNameWithoutExt) ? "-" : fileNameWithoutExt;
+                    Debug.Log("[A_002] File name = " + fileNameWithoutExt);
+                },
+                onErr: (err) => Debug.LogError("LoadAnswer A_002 error: " + err)
+            ));
+        }
+        else
+        {
+            // Default (A_001, dst) pakai versi v3 yang menampilkan 1-3
+            if (JawabanSoal1Object) JawabanSoal1Object.SetActive(true);
+            if (JawabanSoal2Object) JawabanSoal2Object.SetActive(true);
+            if (JawabanSoal3Object) JawabanSoal3Object.SetActive(true);
+            PrefillHeaderFromGradev3(name, gender, score, avatar, userid, item);
+        }
+    }
+    private string FindLikelyPathValue(System.Collections.Generic.Dictionary<int, string> answers)
+    {
+        if (answers == null || answers.Count == 0) return null;
+
+        foreach (var kv in answers)
+        {
+            var v = kv.Value ?? "";
+            if (v.Contains("/") || v.Contains("\\") ||
+                v.IndexOf(".pdf", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                v.IndexOf(".doc", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                v.IndexOf(".docx", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                v.IndexOf(".ppt", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                v.IndexOf(".pptx", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                v.IndexOf(".zip", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                v.IndexOf(".mp4", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return v;
+            }
+        }
+        return null;
+    }
     public void PrefillHeaderFromGradev3(
       string name, string gender, float score, Texture avatar,
       string userid,JSONNode item)
@@ -84,7 +244,7 @@ public class AnswerView : MonoBehaviour
         userid = (userid ?? "").Trim();
         string GradeId = item["grade_id"]?.Value ?? item["id"]?.Value ?? "";
         string SubmissionId = item["submission_id"]?.Value ?? "";
-
+        Nilai = GradeId;
         var objectsubmission = item["submission"];
         string Assesemntid = item["submission"]?["assessment_id"]?.Value ?? "";
         Debug.Log("Datas : "+item.ToString());
@@ -130,7 +290,17 @@ public class AnswerView : MonoBehaviour
                         genderFromJson = userObj["gender"];
                     }
                 }
-
+                bool isMale =
+           genderFromJson.Equals("laki-laki", StringComparison.OrdinalIgnoreCase) ||
+           genderFromJson.Equals("male", StringComparison.OrdinalIgnoreCase) ||
+           genderFromJson.Equals("l", StringComparison.OrdinalIgnoreCase);
+                
+                int iconIndex = isMale ? 0 : 1;
+                if (Icon != null && Icon.Length > 0)
+                {
+                    if (iconIndex < 0 || iconIndex >= Icon.Length) iconIndex = 0;
+                    if (Profile != null) Profile.texture = Icon[iconIndex];
+                }
                 var answers = new System.Collections.Generic.Dictionary<int, string>();
                 foreach (JSONNode item in arr)
                 {
@@ -146,7 +316,11 @@ public class AnswerView : MonoBehaviour
                 if (JawabanSoal1 != null) JawabanSoal1.text = answers.ContainsKey(1) ? answers[1] : "-";
                 if (JawabanSoal2 != null) JawabanSoal2.text = answers.ContainsKey(2) ? answers[2] : "-";
                 if (JawabanSoal3 != null) JawabanSoal3.text = answers.ContainsKey(3) ? answers[3] : "-";
-                if (LinkDownload != null) LinkDownload = answers.ContainsKey(4) ? answers[4] : "-";
+                s3Key = answers.ContainsKey(4) ? answers[4] : "-";
+                string fileNameWithoutExt = Path.GetFileNameWithoutExtension(s3Key);
+                NamFile.text = fileNameWithoutExt;
+
+                Debug.Log(fileNameWithoutExt);
             },
             onErr: (err) => Debug.LogError("LoadAnswer error: " + err)
         ));
@@ -157,7 +331,7 @@ public class AnswerView : MonoBehaviour
     private readonly List<PendingAnswer> pendingAnswers = new List<PendingAnswer>();
     private void Start()
     {
-        SubmissionId = PlayerPrefs.GetString("SubmissionId", "S001");
+       // SubmissionId = PlayerPrefs.GetString("SubmissionId", "S001");
         QuestionId = PlayerPrefs.GetString("QuestionId", "Tidak Ada");
 
     }
@@ -304,36 +478,83 @@ public class AnswerView : MonoBehaviour
         
     }
 
-    public void Download()
+
+    public void OnClickDownloadByKey()
     {
-        if (string.IsNullOrEmpty(LinkDownload) || LinkDownload == "-")
+        if (string.IsNullOrWhiteSpace(s3Key))
         {
-            Debug.LogWarning("Link download kosong");
+            Debug.LogWarning("S3 key kosong");
             return;
         }
 
-        Debug.Log("Mulai download: " + LinkDownload);
-        StartCoroutine(DownloadFile(LinkDownload));
+        // 1) Minta presigned URL GET dari backend
+        presignClient.GetDownloadLink(
+            s3Key,
+            url => StartCoroutine(DownloadToFile(url, System.IO.Path.GetFileName(s3Key))),
+            err => Debug.LogError("Presign gagal: " + err)
+        );
     }
 
-    private IEnumerator DownloadFile(string url)
+    private IEnumerator DownloadToFile(string url, string fallbackFileName)
     {
-        UnityWebRequest request = UnityWebRequest.Get(url);
-        yield return request.SendWebRequest();
-
-        if (request.result != UnityWebRequest.Result.Success)
+        // Tentukan nama file dari URL (tanpa query) agar rapi
+        string finalName = fallbackFileName;
+        try
         {
-            Debug.LogError("Download gagal: " + request.error);
+            var uri = new System.Uri(url);
+            var fromPath = System.IO.Path.GetFileName(uri.AbsolutePath);
+            if (!string.IsNullOrEmpty(fromPath)) finalName = fromPath;
         }
-        else
-        {
-            // Simpan file di persistentDataPath
-            string fileName = System.IO.Path.GetFileName(url);
-            string path = System.IO.Path.Combine(Application.persistentDataPath, fileName);
-            System.IO.File.WriteAllBytes(path, request.downloadHandler.data);
+        catch { }
 
-            Debug.Log("File berhasil diunduh: " + path);
-            Application.OpenURL(path); // Buka file (di luar app)
+        string savePath = System.IO.Path.Combine(Application.persistentDataPath, finalName);
+
+        using (var req = UnityEngine.Networking.UnityWebRequest.Get(url))
+        {
+            // 2) Download langsung ke file → hemat RAM
+            req.downloadHandler = new UnityEngine.Networking.DownloadHandlerFile(savePath, true);
+            req.timeout = 60;
+
+            yield return req.SendWebRequest();
+
+            if (req.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
+            {
+                Debug.LogError($"Download gagal: {req.responseCode} {req.error}");
+                // Jika 403 (expired), tinggal panggil lagi GetDownloadLink untuk URL baru lalu retry sekali.
+                yield break;
+            }
+
+            // (Opsional) rename dari header Content-Disposition kalau backend set
+            var cd = req.GetResponseHeader("Content-Disposition");
+            if (!string.IsNullOrEmpty(cd))
+            {
+                var m = System.Text.RegularExpressions.Regex.Match(cd, "filename\\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?");
+                if (m.Success)
+                {
+                    var headerName = System.Uri.UnescapeDataString(
+                        !string.IsNullOrEmpty(m.Groups[1].Value) ? m.Groups[1].Value : m.Groups[2].Value
+                    );
+                    var newPath = System.IO.Path.Combine(Application.persistentDataPath, headerName);
+                    try
+                    {
+                        if (!savePath.Equals(newPath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (System.IO.File.Exists(newPath)) System.IO.File.Delete(newPath);
+                            System.IO.File.Move(savePath, newPath);
+                            savePath = newPath;
+                        }
+                    }
+                    catch { }
+                }
+            }
+
+            Debug.Log("File tersimpan di: " + savePath);
+
+#if UNITY_ANDROID
+            Application.OpenURL("file://" + savePath);
+#else
+        Application.OpenURL(savePath);
+#endif
         }
     }
 

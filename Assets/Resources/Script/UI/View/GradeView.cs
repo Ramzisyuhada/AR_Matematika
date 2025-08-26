@@ -70,6 +70,36 @@ public class GradeView : MonoBehaviour
             ));
         }
     }
+    // Tambahkan helper di dalam GradeView
+    private static bool HasUsefulData(JSONNode n)
+    {
+        if (n == null) return false;
+
+        // Naik/turun level kalau dibungkus "data"/"attributes"
+        if (n["data"] != null && n["data"].IsObject) n = n["data"];
+        if (n["attributes"] != null && n["attributes"].IsObject) n = n["attributes"];
+
+        // Kriteria minimum sebuah "grade" layak ditampilkan
+        string gradeId = n["grade_id"]?.Value ?? n["id"]?.Value ?? "";
+        string subId = n["submission_id"]?.Value ?? n["submission"]?["id"]?.Value ?? "";
+        string userId = n["user_identifier"]?.Value ?? n["user"]?["identifier"]?.Value ?? "";
+
+        // anggap valid kalau ada minimal grade_id ATAU submission_id
+        if (!string.IsNullOrEmpty(gradeId)) return true;
+        if (!string.IsNullOrEmpty(subId)) return true;
+
+        // kalau tidak ada keduanya, anggap tidak berguna
+        return false;
+    }
+
+    private JSONNode NormalizeItem(JSONNode n)
+    {
+        if (n == null) return n;
+        if (n["data"] != null && n["data"].IsObject) n = n["data"];
+        if (n["attributes"] != null && n["attributes"].IsObject) n = n["attributes"];
+        return n;
+    }
+
 
     public void Refresh()
     {
@@ -78,76 +108,74 @@ public class GradeView : MonoBehaviour
             for (int i = listParent.childCount - 1; i >= 0; i--)
                 Destroy(listParent.GetChild(i).gameObject);
         }
-        SetLoading(true); // ⬅️ mulai loading
+        SetLoading(true);
 
         StartCoroutine(ViewModel.LoadGrade(Assesment,
-    onJson: (json) =>
-    {
-        try
-        {
-            var root = JSON.Parse(json);
-
-            // Kumpulkan item apa pun yang bentuknya array
-            var items = new List<JSONNode>();
-
-            if (root != null)
+            onJson: (json) =>
             {
-                if (root.IsArray)
-                    foreach (JSONNode n in root.Children) items.Add(n);
+                try
+                {
+                    var root = JSON.Parse(json);
+                    var items = new List<JSONNode>();
 
-                if (root["data"] != null && root["data"].IsArray)
-                    foreach (JSONNode n in root["data"].AsArray.Children) items.Add(n);
+                    if (root != null)
+                    {
+                        if (root.IsArray)
+                            foreach (var n in root.Children) items.Add(n);
 
-                if (root["items"] != null && root["items"].IsArray)
-                    foreach (JSONNode n in root["items"].AsArray.Children) items.Add(n);
+                        if (root["data"] != null && root["data"].IsArray)
+                            foreach (var n in root["data"].AsArray.Children) items.Add(n);
 
-                // case: data.items (nested)
-                if (root["data"] != null && root["data"]["items"] != null && root["data"]["items"].IsArray)
-                    foreach (JSONNode n in root["data"]["items"].AsArray.Children) items.Add(n);
-            }
+                        if (root["items"] != null && root["items"].IsArray)
+                            foreach (var n in root["items"].AsArray.Children) items.Add(n);
 
-            // Kalau tidak ada array, coba object tunggal di data/item
-            if (items.Count == 0)
+                        if (root["data"] != null && root["data"]["items"] != null && root["data"]["items"].IsArray)
+                            foreach (var n in root["data"]["items"].AsArray.Children) items.Add(n);
+                    }
+
+                    // ⛔ HAPUS fallback yang memasukkan object kosong
+                    // Dulu: kalau items kosong, items.Add(root) → ini bikin card hantu
+
+                    // Normalisasi level & saring yang benar-benar punya data
+                    var filtered = new List<JSONNode>();
+                    foreach (var it in items)
+                    {
+                        var norm = NormalizeItem(it);
+                        if (HasUsefulData(norm))
+                            filtered.Add(norm);
+                    }
+
+                    if (filtered.Count == 0)
+                    {
+                        Debug.Log("[GradeView] Tidak ada grade yang valid.");
+                        // (Opsional) tampilkan placeholder 'no data' di UI
+                        SetLoading(false);
+                        return;
+                    }
+
+                    foreach (var it in filtered)
+                    {
+                        Debug.Log("[GradeView] Item valid: " + it.ToString());
+                        SpawnCard(it);
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError("[GradeView] Parse error: " + ex.Message);
+                }
+                finally
+                {
+                    SetLoading(false);
+                }
+            },
+            onErr: (err) =>
             {
-                if (root["data"] != null && root["data"].IsObject)
-                    items.Add(root["data"]);
-                else if (root["item"] != null && root["item"].IsObject)
-                    items.Add(root["item"]);
-                else if (root.IsObject)
-                    items.Add(root); // fallback terakhir
-            }
-
-            if (items.Count == 0)
-            {
-                Debug.LogWarning("[GradeView] Skema JSON tak dikenal: " + json);
+                Debug.LogError("LoadGrades error: " + err);
                 SetLoading(false);
-                return;
             }
-
-            foreach (var it in items)
-            {
-                // Debug biar yakin struktur item-nya benar
-                Debug.Log("[GradeView] Item: " + it.ToString());
-                SpawnCard(it);
-            }
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogError("[GradeView] Parse error: " + ex.Message);
-        }
-        finally
-        {
-            SetLoading(false);
-        }
-    },
-    onErr: (err) =>
-    {
-        Debug.LogError("LoadGrades error: " + err);
-        SetLoading(false);
+        ));
     }
-));
 
-    }
 
     private void SpawnCard(JSONNode item)
     {
@@ -157,45 +185,40 @@ public class GradeView : MonoBehaviour
             return;
         }
 
-        // Kalau grade_id kosong tapi ada di data, geser levelnya
-        if (string.IsNullOrEmpty(item["grade_id"]))
+        item = NormalizeItem(item);
+        if (!HasUsefulData(item))
         {
-            if (item["data"] != null && item["data"].IsObject)
-                item = item["data"];
-            else if (item["attributes"] != null && item["attributes"].IsObject)
-                item = item["attributes"];
+            Debug.Log("[GradeView] Skip card: item tidak valid/ kosong.");
+            return;
         }
-
-        Debug.Log("Grade item preview: " + item.ToString());
-        Debug.Log("grade_id: " + item["grade_id"]);
 
         var go = Instantiate(cardPrefab, listParent);
         var card = go.GetComponent<GradeCard>();
         if (card == null)
         {
             Debug.LogError("Prefab Card tidak memiliki komponen GradeCard.");
+            Destroy(go);
             return;
         }
+
         card.Init(answerView);
 
         try
         {
-
-            card.Bind(item, Icon
-
-            ); }
+            card.Bind(item, Icon, Assesment);
+        }
         catch (System.Exception ex)
         {
             Debug.LogError($"Bind error: {ex.Message}\n{ex.StackTrace}");
+            Destroy(go); // jangan biarkan card kosong nongol
         }
+
         if (answerView == null)
         {
             Debug.LogError("AnswerView belum di-assign di Inspector.");
-            return;
         }
-
-      
     }
+
 
 
     public void PostNilai()
@@ -222,6 +245,8 @@ public class GradeView : MonoBehaviour
         // 2) Siapkan payload grade (gunakan SubmissionId yang valid)
         string jsonBody = JsonConvert.SerializeObject(new
         {
+            submission_id = PlayerPrefs.GetString("SubmissionId", ""),
+
             user_identifier = UserId,
             score = 0f
         });

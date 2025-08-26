@@ -99,12 +99,13 @@ public class PdfUploadUI : MonoBehaviour
             {
                 // Tampilkan URL ke user
                 UpdateInfo($"✅ Upload OK\nDownload: {presignUrl}");
+                string s = PlayerPrefs.GetString("SubmissionId", "-");
 
                 string jsonBody = JsonConvert.SerializeObject(new
                 {
-                    submission_id = "S001",
+                    submission_id = s,
                     question_id = "Q004",
-                    answer_text = presignUrl
+                    answer_text = s3key
                 });
 
                 StartCoroutine(ViewModel.PostAnswer(jsonBody, onJson: res =>

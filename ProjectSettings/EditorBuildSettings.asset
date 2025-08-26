@@ -35,6 +35,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Resources/Scane/Guru Rangking.unity
     guid: c369fcc15eb69be468c3026014466bcb
+  - enabled: 1
+    path: Assets/Resources/Scane/PostTest.unity
+    guid: 8a6013e4d5845334f868e138a42bcccb
   m_configObjects:
     com.unity.adaptiveperformance.google.android.provider_settings: {fileID: 11400000,
       guid: e9c77a55a5e827c4e94df9cb72d84292, type: 2}
