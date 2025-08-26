@@ -16,6 +16,6 @@ public class Endpoints : ScriptableObject
     public string userByQuery = "/users?user_identifier={id}";
     public string answersBySubmission = "/api/answers?submission_id={id}";     // detail jawaban
     public string putById = "/users/{id}/gayabelajar";
-
+    public string geytById1 = "answers/by-submission/{idsub}?assessment_id={asid}";
 
 }

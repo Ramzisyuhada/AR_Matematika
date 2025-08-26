@@ -37,24 +37,36 @@ private string displayGender;
 private float displayScore;
 private Texture displayAvatar;
     // Simpan ID yang relevan
-    public string GradeId { get; private set; } // biasanya "grade_id"
-    public string SubmissionId { get; private set; } // biasanya "submission_id"
-    public string UserIdentifier { get; private set; } // tambah property
+    public string GradeId; // biasanya "grade_id"
+    public string SubmissionId; // biasanya "submission_id"
+    public string UserIdentifier; // tambah property
+    public string Assesemntid; // tambah property
+    private string CardTag => $"[GradeCard#{GetInstanceID()}]";
 
     private void Awake()
     {
         if (btn != null)
+        {
+            btn.onClick.RemoveAllListeners();      // 🔒 pastikan tidak dobel
             btn.onClick.AddListener(OnCardClicked);
+        }
         else
+        {
             Debug.LogWarning("[GradeCard] Button belum di-assign di Inspector.");
+        }
     }
+    private void Start()
+    {
+        var views = FindObjectsOfType<AnswerView>(true);
+        Debug.Log($"[Check] AnswerView count = {views.Length}");
 
+    }
     private void OnDestroy()
     {
         if (btn != null)
             btn.onClick.RemoveListener(OnCardClicked);
     }
-
+    JSONNode datas;
     public void Bind(JSONNode item, Texture2D[] iconSet)
     {
         Debug.Log("Hello Ini Data : " + item.ToString());
@@ -63,10 +75,16 @@ private Texture displayAvatar;
             Debug.LogWarning("[GradeCard] Bind dipanggil dengan item null.");
             return;
         }
+        datas = item;
 
         GradeId = item["grade_id"]?.Value ?? item["id"]?.Value ?? "";
-        SubmissionId = item["submission_id"]?.Value ?? "";
+        SubmissionId = item["submission"]?["submission_id"]?.Value ?? "";
+
+        var objectsubmission = item["submission"];
+        Assesemntid =  item["submission"]?["assessment_id"]?.Value ?? "";
+
         UserIdentifier = item["user_identifier"]?.Value ?? item["user"]?["user_identifier"]?.Value ?? "";
+        Debug.Log($"{CardTag} Bind OK → grade={GradeId} sub={SubmissionId} assessment={Assesemntid} user={UserIdentifier}");
 
         // Data user
         var user = item["user"];
@@ -135,23 +153,32 @@ private Texture displayAvatar;
         transform.parent.parent.parent.parent.GetChild(4).gameObject.SetActive(true);
         transform.parent.parent.parent.parent.GetChild(1).gameObject.SetActive(false);
         Debug.Log($"[Klik] grade={GradeId}, submission={SubmissionId}, user={UserIdentifier}");
-
+        var sid = (this.SubmissionId ?? "").Trim();
+        var asid = (this.Assesemntid ?? "").Trim();
         if (View == null)
         {
             Debug.LogError("[GradeCard] AnswerView belum di-init. Panggil card.Init(answerView) saat spawn.");
             return;
         }
-        View.PrefillHeaderFromGrade(
+
+        Debug.Log($"{CardTag} OnCardClicked sub='{sid}' assess='{asid}' view='{(View ? View.GetInstanceID().ToString() : "null")}'");
+
+        nama.text = displayName;
+        View.PrefillHeaderFromGradev3(
     displayName,
     displayGender,
     displayScore,
-    displayAvatar
+    displayAvatar,
+   
+    UserIdentifier,
+    datas
+
 );
         string idForDetail = !string.IsNullOrEmpty(SubmissionId) ? SubmissionId : GradeId;
         if (!string.IsNullOrEmpty(idForDetail))
         {
-            Debug.Log($"[GradeCard] OpenDetail submission={SubmissionId}, grade={GradeId}");
-            View.ShowDetail(SubmissionId, GradeId);
+           // Debug.Log($"[GradeCard] OpenDetail submission={SubmissionId}, grade={Assesemntid}");
+            //View.ShowDetail(SubmissionId, Assesemntid);
         }
         else
         {

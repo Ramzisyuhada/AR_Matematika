@@ -15,7 +15,15 @@ public class AnswerVM : MonoBehaviour
         yield return apiClient.GetById(url, onJson, onErr);
     }
 
+    public IEnumerator LoadAnswerById1(string path, string path1,  string path2, Action<string> onJson, Action<string> onErr)
+    {
+        string url = endpoints.geytById1
+            .Replace("{idsub}", path)
+            .Replace("{asid}", path1)
+                    .Replace("{usid}", path2);
 
+        yield return apiClient.GetById(url, onJson, onErr);
+    }
     public IEnumerator PostAnswer(string jsonBody, Action<string> onJson, Action<string> onErr)
     {
         yield return apiClient.Post(endpoints.Post, jsonBody, onJson, onErr);

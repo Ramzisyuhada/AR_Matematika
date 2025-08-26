@@ -20,3 +20,4 @@ MonoBehaviour:
   userByQuery: grades?assessment_id={id}
   answersBySubmission: /api/answers?submission_id={id}
   putById: /users/{id}/gayabelajar
+  geytById1: answers/by-submission/{idsub}?assessment_id={asid}/user_identifier={usid}

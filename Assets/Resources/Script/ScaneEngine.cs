@@ -25,7 +25,7 @@ public class ScaneEngine : MonoBehaviour
     {
         if (name == "Latihan")
         {
-            PlayerPrefs.SetString("SubmissionId", "S001");
+          //  PlayerPrefs.SetString("SubmissionId", "S001");
             PlayerPrefs.SetString("assessment_id", "A_001");
 
             PlayerPrefs.Save();

@@ -537,6 +537,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1229391499072769526, guid: 6618cda75019fc844b353833b74d5029,
         type: 3}
+      propertyPath: View
+      value: 
+      objectReference: {fileID: 1873743566}
+    - target: {fileID: 1229391499072769526, guid: 6618cda75019fc844b353833b74d5029,
+        type: 3}
       propertyPath: Filter
       value: 
       objectReference: {fileID: 1696195120}
@@ -2799,6 +2804,7 @@ MonoBehaviour:
   listParent: {fileID: 2065837200}
   cardPrefab: {fileID: 5459592038955132519, guid: 6618cda75019fc844b353833b74d5029,
     type: 3}
+  LoadingScreen: {fileID: 0}
   Icon:
   - {fileID: 2800000, guid: fda51a44ae40d21448f3a3a0ad876cf9, type: 3}
   - {fileID: 2800000, guid: 2fd1bb19f8543e14ca9e569dbb4bb1e5, type: 3}
@@ -2897,6 +2903,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ViewModel: {fileID: 1873743567}
   ViewModel1: {fileID: 1873743561}
+  ViewModel3: {fileID: 0}
   nilai: {fileID: 1229391499072769526, guid: 6618cda75019fc844b353833b74d5029, type: 3}
   UsernameHead: {fileID: 2002801615}
   Username: {fileID: 620923616}
@@ -4264,7 +4271,7 @@ PrefabInstance:
     - target: {fileID: 8341511422001306975, guid: 6cc6cbc5b015b994fb138781d8bae64d,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -270.34677
+      value: -270.34625
       objectReference: {fileID: 0}
     - target: {fileID: 8481724585719402856, guid: 6cc6cbc5b015b994fb138781d8bae64d,
         type: 3}

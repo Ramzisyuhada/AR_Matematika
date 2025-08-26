@@ -222,7 +222,6 @@ public class GradeView : MonoBehaviour
         // 2) Siapkan payload grade (gunakan SubmissionId yang valid)
         string jsonBody = JsonConvert.SerializeObject(new
         {
-            submission_id = SubmissionId,
             user_identifier = UserId,
             score = 0f
         });

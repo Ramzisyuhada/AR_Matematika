@@ -70,25 +70,88 @@ public class AnswerView : MonoBehaviour
         public string answer_text;
     }
 
-    public void PrefillHeaderFromGrade(string name, string gender, float score, Texture avatar)
+    public void PrefillHeaderFromGradev3(
+      string name, string gender, float score, Texture avatar,
+      string userid,JSONNode item)
     {
-        if (UsernameHead != null) UsernameHead.text = name ?? "(tanpa nama)";
-        if (Username != null) Username.text = name ?? "(tanpa nama)";
+        // UI awal
+        if (UsernameHead) UsernameHead.text = name ?? "(tanpa nama)";
+        if (Username) Username.text = name ?? "(tanpa nama)";
+        if (Profile && avatar) Profile.texture = avatar;
+        if (GayaBelajar) GayaBelajar.text = "-";
 
-        // Profil (kalau disediakan)
-        if (Profile != null && avatar != null) Profile.texture = avatar;
+    
+        userid = (userid ?? "").Trim();
+        string GradeId = item["grade_id"]?.Value ?? item["id"]?.Value ?? "";
+        string SubmissionId = item["submission_id"]?.Value ?? "";
 
-        // Gaya belajar (kalau string ini diisi dari API lain, set placeholder dulu)
-        if (GayaBelajar != null)
-        {
-            // Placeholder: "-" dulu, nanti bisa ditimpa setelah fetch user detail
-            GayaBelajar.text = "-";
-        }
+        var objectsubmission = item["submission"];
+        string Assesemntid = item["submission"]?["assessment_id"]?.Value ?? "";
+        Debug.Log("Datas : "+item.ToString());
+        Debug.Log($"[AnswerView#{GetInstanceID()}] PrefillHeaderFromGrade sub='{SubmissionId}' assess='{Assesemntid}' user='{userid}'");
 
-        // Nilai (kalau punya header nilai)
-        //if (NilaiText != null)
-        //    NilaiText.text = score.ToString("0.##", CultureInfo.InvariantCulture);
+        StartCoroutine(ViewModel.LoadAnswerById1(
+            SubmissionId,                        // path
+            Assesemntid,
+            userid,// query
+            onJson: (json) =>
+            {
+                var root = JSON.Parse(json);
+                Debug.Log("[LoadAnswerById1] Response: " + root);
+                if (root == null) { Debug.LogError("JSON null"); return; }
+
+                JSONArray arr = null;
+                if (root.IsArray) arr = root.AsArray;
+                else if (root.IsObject)
+                {
+                    if (root["data"] != null && root["data"].IsArray) arr = root["data"].AsArray;
+                    else if (root["items"] != null && root["items"].IsArray) arr = root["items"].AsArray;
+                }
+
+                if (arr == null || arr.Count == 0)
+                {
+                    Debug.LogWarning("[AnswerView] Data kosong / bukan array");
+                    return;
+                }
+
+                var first = arr[0];
+                string userName = "-";
+                string userIdentifier = "-";
+                string genderFromJson = "-"; // ⬅️ hindari shadowing 'gender' param
+
+                var submissionObj = first["submission"];
+                if (submissionObj != null)
+                {
+                    userIdentifier = submissionObj["user_identifier"];
+                    var userObj = submissionObj["user"];
+                    if (userObj != null)
+                    {
+                        userName = userObj["name"];
+                        genderFromJson = userObj["gender"];
+                    }
+                }
+
+                var answers = new System.Collections.Generic.Dictionary<int, string>();
+                foreach (JSONNode item in arr)
+                {
+                    int qNum = item["question"]["question_number"].AsInt;
+                    string ans = item["answer_text"] ?? "-";
+                    if (qNum > 0) answers[qNum] = ans;
+                }
+
+                if (UsernameHead != null) UsernameHead.text = string.IsNullOrEmpty(userName) ? userIdentifier : userName;
+                if (Username != null) Username.text = string.IsNullOrEmpty(userName) ? userIdentifier : userName;
+                if (GayaBelajar != null) GayaBelajar.text = "-";
+
+                if (JawabanSoal1 != null) JawabanSoal1.text = answers.ContainsKey(1) ? answers[1] : "-";
+                if (JawabanSoal2 != null) JawabanSoal2.text = answers.ContainsKey(2) ? answers[2] : "-";
+                if (JawabanSoal3 != null) JawabanSoal3.text = answers.ContainsKey(3) ? answers[3] : "-";
+                if (LinkDownload != null) LinkDownload = answers.ContainsKey(4) ? answers[4] : "-";
+            },
+            onErr: (err) => Debug.LogError("LoadAnswer error: " + err)
+        ));
     }
+
 
     // penampung semua jawaban sampai final submit
     private readonly List<PendingAnswer> pendingAnswers = new List<PendingAnswer>();
@@ -229,92 +292,16 @@ public class AnswerView : MonoBehaviour
         InputJawaban.text = string.Empty;
     }
 
-    public void ShowDetail(string gradeId,string nilai)
+    public void ShowDetail(string iduser,string idas)
     {
         
-        Nilai = nilai;
-        if (string.IsNullOrEmpty(gradeId))
+        if (string.IsNullOrEmpty(iduser))
         {
             Debug.LogWarning("GradeId kosong saat buka detail");
             return;
         }
 
-        Debug.Log("ID : "+gradeId);
-        StartCoroutine(ViewModel.LoadAnswerById(gradeId,
-            onJson: (json) =>
-            {
-                var root = JSON.Parse(json);
-                if (root == null) { Debug.LogError("JSON null"); return; }  
-
-                JSONArray arr = null;
-                if (root.IsArray)
-                {
-                    arr = root.AsArray;
-                }
-                else if (root.IsObject)
-                {
-                    if (root["data"] != null && root["data"].IsArray)
-                        arr = root["data"].AsArray;
-                    else if (root["items"] != null && root["items"].IsArray)
-                        arr = root["items"].AsArray;
-                }
-                if (arr == null || arr.Count == 0)
-                {
-                    Debug.LogWarning("[AnswerView.ShowDetail] Data kosong / bukan array");
-                    return;
-                }
-
-                // Ambil info user dari jawaban pertama
-                var first = arr[0];
-                string userName = "-";
-                string userIdentifier = "-";
-                string gender = "-";
-
-                var submissionObj = first["submission"];
-                if (submissionObj != null)
-                {
-                    userIdentifier = submissionObj["user_identifier"] ?? "-";
-                    var userObj = submissionObj["user"];
-                    if (userObj != null)
-                    {
-                        userName = userObj["name"] ?? "-";
-                        gender = userObj["gender"] ?? "-";
-                    }
-                }
-
-           
-
-                Dictionary<int, string> answers = new Dictionary<int, string>();
-                foreach (JSONNode item in arr)
-                {
-                    int qNum = item["question"]["question_number"].AsInt;
-                    string ans = item["answer_text"] ?? "-";
-                    Debug.Log(ans);
-
-                    if (qNum > 0) answers[qNum] = ans;
-                }
-
-                if (UsernameHead != null)
-                {
-                    UsernameHead.text = string.IsNullOrEmpty(userName) ? userIdentifier : userName;
-                    Username.text = string.IsNullOrEmpty(userName) ? userIdentifier : userName;
-                }
-                if (GayaBelajar != null)
-                    GayaBelajar.text = "-"; // Belum ada di JSON
-
-                if (JawabanSoal1 != null)
-                    JawabanSoal1.text = answers.ContainsKey(1) ? answers[1] : "-";
-                if (JawabanSoal2 != null)
-                    JawabanSoal2.text = answers.ContainsKey(2) ? answers[2] : "-";
-                if (JawabanSoal3 != null)
-                    JawabanSoal3.text = answers.ContainsKey(3) ? answers[3] : "-";
-                if (LinkDownload != null)
-                    LinkDownload = answers.ContainsKey(4) ? answers[4] : "-";
-                Debug.Log(arr);
-
-            },
-            onErr: (err) => Debug.LogError("LoadAnswer error: " + err)
-        ));
+        
     }
 
     public void Download()
