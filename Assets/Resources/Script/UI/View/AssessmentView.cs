@@ -2,8 +2,6 @@
 using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
-using static UnityEditor.Profiling.HierarchyFrameDataView;
-using Unity.VisualScripting;
 using Newtonsoft.Json;
 using UnityEngine.SceneManagement;
 using UnityEditor;
@@ -13,7 +11,9 @@ using SimpleJSON;
 using System.Collections;
 using System.Collections.Generic;
 using System.Security.Cryptography;
-
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 public class AssessmentView : MonoBehaviour
 {
     [Header("Refs")]
@@ -64,6 +64,7 @@ public class AssessmentView : MonoBehaviour
     }
     private void Start()
     {
+        LoadingScreen.SetActive(true);
         Refresh();
 
     }
@@ -71,22 +72,79 @@ public class AssessmentView : MonoBehaviour
     {
         StartCoroutine(ViewModel.Get("A_002", 
         onJson: res => {
-            var root = JSON.Parse(res);
-            if (root == null) { Debug.Log("JSON Kosong");  return; }
+            try
+            {
+                var root = JSON.Parse(res);
+                if (root == null)
+                {
+                    Debug.LogWarning("Gagal parse JSON: null");
+                    return;
+                }
 
-            var data = root["data"];
-            if (NamaFile == null) { Debug.LogError("Object Belum di isi "); return; }
+                // Ambil node "data" (bisa object atau array tergantung API)
+                JSONNode data = root["data"];
+                if (data == null || data.IsNull)
+                {
+                    Debug.LogWarning("JSON tidak memiliki key 'data'.");
+                    SetNamaFileText("Tidak ada file");
+                    return;
+                }
 
-            string fileNameWithoutExt = Path.GetFileNameWithoutExtension(string.IsNullOrEmpty(data["file_url_soal"])
-                ? "Tidak ada file"
-                : data["file_url_soal"]);
+                // Jika "data" berupa array, ambil elemen pertama
+                if (data.IsArray && data.Count > 0)
+                    data = data[0];
 
-            NamaFile.text = fileNameWithoutExt;
+                // Ambil url sebagai string aman
+                string url = data?["file_url_soal"]?.Value ?? string.Empty;
+
+                // Tentukan nama file tanpa ekstensi, fallback kalau kosong
+                string fileNameWithoutExt = string.IsNullOrWhiteSpace(url)
+                    ? "Tidak ada file"
+                    : Path.GetFileNameWithoutExtension(url);
+
+                SetNamaFileText(fileNameWithoutExt);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"Error saat memproses JSON: {ex.Message}");
+                SetNamaFileText("Tidak ada file");
+            }
+            finally
+            {
+                if (LoadingScreen) LoadingScreen.SetActive(false);
+            }
+
         }
         , onErr: Err =>
         {
 
         }));
+    }
+    private void OpenWithNativeShare(string path)
+    {
+        if (!System.IO.File.Exists(path))
+        {
+            Debug.LogWarning("[OpenWithNativeShare] File tidak ada: " + path);
+            return;
+        }
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+    // NativeShare otomatis pakai FileProvider + grant permission
+    new NativeShare()
+        .AddFile(path, "application/pdf")
+        .SetSubject("Open PDF")
+        .SetText(" ")
+        .Share(); // tampil chooser → pilih PDF viewer
+#else
+        Application.OpenURL(path);
+#endif
+    }
+
+
+    private void SetNamaFileText(string text)
+    {
+        if (NamaFile != null) NamaFile.text = text;
+        else Debug.LogError("Object 'NamaFile' belum di-assign di Inspector.");
     }
     public void Upload()
     {
@@ -94,18 +152,44 @@ public class AssessmentView : MonoBehaviour
         btnUpload.onClick.AddListener(OnUpload);
     }
 
-    void OnPickFile()
+    private void OnPickFile()
     {
 #if UNITY_EDITOR
-        string path = EditorUtility.OpenFilePanel("Pilih PDF", "", "pdf");
+        // Editor: panel file bawaan Unity
+        string path = UnityEditor.EditorUtility.OpenFilePanel("Pilih PDF", "", "pdf");
         if (!string.IsNullOrEmpty(path))
-        {
             TryLoadPdf(path);
-        }
+        else
+            UpdateInfo("Dibatalkan.");
+#elif UNITY_ANDROID
+    try
+    {
+        // Versi lama NativeFilePicker:
+        // Signature: PickFile(PickCallback callback, string mime)
+        NativeFilePicker.PickFile(
+            (path) =>
+            {
+                if (string.IsNullOrEmpty(path))
+                {
+                    UpdateInfo("Dibatalkan.");
+                    return;
+                }
+
+                TryLoadPdf(path); // validasi & load file kamu
+            },
+            "application/pdf" // <- STRING tunggal, bukan string[]
+        );
+    }
+    catch (System.Exception ex)
+    {
+        UpdateInfo("Gagal membuka file picker: " + ex.Message);
+    }
 #else
-        UpdateInfo("File picker runtime belum diset. Di Android/iOS gunakan plugin (SimpleFileBrowser/NativeFilePicker).");
+    UpdateInfo("File picker belum diimplementasi untuk platform ini.");
 #endif
     }
+
+
 
     public void AplodTugas()
     {

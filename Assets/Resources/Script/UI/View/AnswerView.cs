@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Text.RegularExpressions;
 using TMPro;
 using Unity.Burst.Intrinsics;
 using UnityEngine;
@@ -478,85 +479,237 @@ public class AnswerView : MonoBehaviour
         
     }
 
-
-    public void OnClickDownloadByKey()
+    public void OnClickOpenLocalOrDownload()
     {
-        if (string.IsNullOrWhiteSpace(s3Key))
+        if (string.IsNullOrWhiteSpace(s3Key) || s3Key == "-")
         {
-            Debug.LogWarning("S3 key kosong");
+            Debug.LogWarning("[OpenLocalOrDownload] s3Key kosong / tidak valid");
             return;
         }
 
-        // 1) Minta presigned URL GET dari backend
+        // Ambil nama file dari s3Key (mis. "folder/submission/rapor.pdf" -> "rapor.pdf")
+        string fileName = Path.GetFileName(s3Key);
+        if (string.IsNullOrWhiteSpace(fileName))
+            fileName = "file"; // fallback
+
+        string localPath = Path.Combine(Application.persistentDataPath, fileName);
+
+        if (File.Exists(localPath))
+        {
+            Debug.Log("[OpenLocalOrDownload] File sudah ada, langsung buka: " + localPath);
+            OpenWithNativeShare(localPath);
+            return;
+        }
+
+        // Belum ada → presign & download → DownloadToFile akan memanggil OpenFile setelah selesai
+        Debug.Log("[OpenLocalOrDownload] File belum ada, request presigned URL dan download...");
+        if (presignClient == null)
+        {
+            Debug.LogError("[OpenLocalOrDownload] presignClient belum di-assign di Inspector!");
+            return;
+        }
+
         presignClient.GetDownloadLink(
             s3Key,
-            url => StartCoroutine(DownloadToFile(url, System.IO.Path.GetFileName(s3Key))),
-            err => Debug.LogError("Presign gagal: " + err)
+            url => StartCoroutine(DownloadToFile(url, fileName)),
+            err => Debug.LogError("[OpenLocalOrDownload] Presign gagal: " + err)
         );
     }
-
     private IEnumerator DownloadToFile(string url, string fallbackFileName)
     {
-        // Tentukan nama file dari URL (tanpa query) agar rapi
-        string finalName = fallbackFileName;
+        // 1) Tentukan nama file yang rapi
+        string finalName = string.IsNullOrWhiteSpace(fallbackFileName) ? "file" : fallbackFileName;
         try
         {
-            var uri = new System.Uri(url);
-            var fromPath = System.IO.Path.GetFileName(uri.AbsolutePath);
-            if (!string.IsNullOrEmpty(fromPath)) finalName = fromPath;
+            var uri = new Uri(url);
+            var fromUrl = Path.GetFileName(uri.AbsolutePath);
+            if (!string.IsNullOrEmpty(fromUrl)) finalName = fromUrl;
         }
-        catch { }
+        catch { /* ignore */ }
 
-        string savePath = System.IO.Path.Combine(Application.persistentDataPath, finalName);
+        string savePath = Path.Combine(Application.persistentDataPath, finalName);
+        Debug.Log("[DownloadToFile] → " + savePath);
 
-        using (var req = UnityEngine.Networking.UnityWebRequest.Get(url))
+        // 2) Download langsung ke file (hemat RAM)
+        using (var req = UnityWebRequest.Get(url))
         {
-            // 2) Download langsung ke file → hemat RAM
-            req.downloadHandler = new UnityEngine.Networking.DownloadHandlerFile(savePath, true);
-            req.timeout = 60;
+            req.downloadHandler = new DownloadHandlerFile(savePath, true);
+            req.timeout = 90;
 
             yield return req.SendWebRequest();
 
-            if (req.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
+            if (req.result != UnityWebRequest.Result.Success)
             {
-                Debug.LogError($"Download gagal: {req.responseCode} {req.error}");
-                // Jika 403 (expired), tinggal panggil lagi GetDownloadLink untuk URL baru lalu retry sekali.
+                Debug.LogError($"Download failed: {req.responseCode} {req.error}");
                 yield break;
             }
 
-            // (Opsional) rename dari header Content-Disposition kalau backend set
-            var cd = req.GetResponseHeader("Content-Disposition");
+            // 3) Coba rename dari Content-Disposition (jika ada)
+            string cd = req.GetResponseHeader("Content-Disposition");
             if (!string.IsNullOrEmpty(cd))
             {
-                var m = System.Text.RegularExpressions.Regex.Match(cd, "filename\\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?");
+                var m = Regex.Match(cd, "filename\\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?");
                 if (m.Success)
                 {
-                    var headerName = System.Uri.UnescapeDataString(
-                        !string.IsNullOrEmpty(m.Groups[1].Value) ? m.Groups[1].Value : m.Groups[2].Value
-                    );
-                    var newPath = System.IO.Path.Combine(Application.persistentDataPath, headerName);
+                    string headerName = Uri.UnescapeDataString(!string.IsNullOrEmpty(m.Groups[1].Value)
+                                                               ? m.Groups[1].Value
+                                                               : m.Groups[2].Value);
+                    var newPath = Path.Combine(Application.persistentDataPath, headerName);
                     try
                     {
                         if (!savePath.Equals(newPath, StringComparison.OrdinalIgnoreCase))
                         {
-                            if (System.IO.File.Exists(newPath)) System.IO.File.Delete(newPath);
-                            System.IO.File.Move(savePath, newPath);
+                            if (File.Exists(newPath)) File.Delete(newPath);
+                            File.Move(savePath, newPath);
                             savePath = newPath;
                         }
                     }
-                    catch { }
+                    catch (Exception ex) { Debug.LogWarning("[DownloadToFile] Rename error: " + ex.Message); }
                 }
             }
 
-            Debug.Log("File tersimpan di: " + savePath);
+            // 4) Pastikan ada ekstensi (khususnya PDF)
+            string contentType = req.GetResponseHeader("Content-Type") ?? "";
+            if (!Path.HasExtension(savePath) && contentType.StartsWith("application/pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                string withExt = savePath + ".pdf";
+                try
+                {
+                    if (File.Exists(withExt)) File.Delete(withExt);
+                    File.Move(savePath, withExt);
+                    savePath = withExt;
+                }
+                catch (Exception ex) { Debug.LogWarning("[DownloadToFile] Add .pdf error: " + ex.Message); }
+            }
 
-#if UNITY_ANDROID
-            Application.OpenURL("file://" + savePath);
-#else
-        Application.OpenURL(savePath);
-#endif
+            long size = new FileInfo(savePath).Length;
+            Debug.Log($"[DownloadToFile] Saved {size} bytes at {savePath} (Content-Type={contentType})");
+
+            // 5) Buka dengan NativeShare (chooser ke PDF viewer / app terkait)
+            OpenWithNativeShare(savePath);
         }
     }
+
+    private void OpenFile(string localPath)
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+    try
+    {
+        if (!System.IO.File.Exists(localPath))
+        {
+            Debug.LogError("[OpenFile] File tidak ditemukan: " + localPath);
+            return;
+        }
+
+        long size = new System.IO.FileInfo(localPath).Length;
+        Debug.Log($"[OpenFile] path={localPath} size={size}B");
+
+        AndroidJavaClass intentClass = new AndroidJavaClass("android.content.Intent");
+        AndroidJavaObject intent = new AndroidJavaObject("android.content.Intent");
+        intent.Call<AndroidJavaObject>("setAction", intentClass.GetStatic<string>("ACTION_VIEW"));
+
+        AndroidJavaObject activity = GetUnityActivity();
+        string authority = Application.identifier + ".fileprovider";
+        AndroidJavaClass uriClass = new AndroidJavaClass("androidx.core.content.FileProvider");
+        AndroidJavaObject fileObj = new AndroidJavaObject("java.io.File", localPath);
+        AndroidJavaObject uri = uriClass.CallStatic<AndroidJavaObject>("getUriForFile", activity, authority, fileObj);
+
+        string mime = GetMimeType(localPath);
+        intent.Call<AndroidJavaObject>("setDataAndType", uri, mime);
+
+        const int FLAG_GRANT_READ_URI_PERMISSION = 1;
+        const int FLAG_ACTIVITY_CLEAR_TOP = 0x04000000;
+        intent.Call<AndroidJavaObject>("addFlags", FLAG_GRANT_READ_URI_PERMISSION);
+        intent.Call<AndroidJavaObject>("addFlags", FLAG_ACTIVITY_CLEAR_TOP);
+
+        // ClipData agar grant URI lebih konsisten di beberapa OEM
+        AndroidJavaClass clipDataClass = new AndroidJavaClass("android.content.ClipData");
+        AndroidJavaObject clip = clipDataClass.CallStatic<AndroidJavaObject>(
+            "newUri",
+            new AndroidJavaObject("java.lang.String", "File"),
+            new AndroidJavaObject("java.lang.String", "text/uri-list"),
+            uri
+        );
+        intent.Call("setClipData", clip);
+
+        // (Opsional) chooser – gunakan String sbg judul (CharSequence tidak bisa di-new)
+        AndroidJavaObject chooser =
+            intentClass.CallStatic<AndroidJavaObject>("createChooser", intent, new AndroidJavaObject("java.lang.String", "Buka dengan"));
+
+        Debug.Log($"[OpenFile] uri={uri?.Call<string>("toString")} mime={mime} authority={authority}");
+        activity.Call("startActivity", chooser); // atau pakai 'intent' langsung
+    }
+    catch (AndroidJavaException aje)
+    {
+        Debug.LogError("[OpenFile] AndroidJavaException: " + aje);
+        if (aje.ToString().Contains("ActivityNotFoundException"))
+            Debug.LogWarning("Tidak ada app viewer. Install PDF viewer (Google Drive/Adobe/WPS).");
+
+        Application.OpenURL("file://" + localPath); // fallback
+    }
+    catch (System.Exception e)
+    {
+        Debug.LogError("[OpenFile] Exception: " + e.Message);
+        Application.OpenURL("file://" + localPath); // fallback
+    }
+#else
+        // Editor / non-Android
+        Application.OpenURL(localPath);
+#endif
+    }
+
+    private void OpenWithNativeShare(string path)
+    {
+        if (!File.Exists(path))
+        {
+            Debug.LogWarning("[OpenWithNativeShare] File tidak ada: " + path);
+            return;
+        }
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+    // Detect MIME dari ekstensi supaya viewer tepat
+    string mime = GetMimeTypeForShare(path);
+    new NativeShare()
+        .AddFile(path, mime)
+        .SetSubject("Open file")
+        .SetText(" ")
+        .Share(); // tampil chooser → pilih app yang bisa buka
+#else
+        Application.OpenURL(path);
+#endif
+    }
+    private string GetMimeTypeForShare(string path)
+    {
+        string p = path.ToLowerInvariant();
+        if (p.EndsWith(".pdf")) return "application/pdf";
+        if (p.EndsWith(".jpg") || p.EndsWith(".jpeg")) return "image/jpeg";
+        if (p.EndsWith(".png")) return "image/png";
+        if (p.EndsWith(".doc")) return "application/msword";
+        if (p.EndsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        if (p.EndsWith(".ppt")) return "application/vnd.ms-powerpoint";
+        if (p.EndsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+        if (p.EndsWith(".xls")) return "application/vnd.ms-excel";
+        if (p.EndsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        if (p.EndsWith(".txt")) return "text/plain";
+        if (p.EndsWith(".mp4")) return "video/mp4";
+        if (p.EndsWith(".zip")) return "application/zip";
+        return "*/*";
+    }
+
+    private string GetMimeType(string path)
+    {
+        if (path.EndsWith(".pdf")) return "application/pdf";
+        if (path.EndsWith(".jpg") || path.EndsWith(".jpeg")) return "image/jpeg";
+        if (path.EndsWith(".png")) return "image/png";
+        return "*/*"; // fallback
+    }
+
+    private AndroidJavaObject GetUnityActivity()
+    {
+        AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+        return unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+    }
+
 
     public void PostNilai()
     {

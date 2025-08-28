@@ -2,7 +2,6 @@
 using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
-using static UnityEditor.Profiling.HierarchyFrameDataView;
 using Unity.VisualScripting;
 using Newtonsoft.Json;
 using UnityEngine.SceneManagement;
@@ -42,15 +41,37 @@ public class PdfUploadUI : MonoBehaviour
     void OnPickFile()
     {
 #if UNITY_EDITOR
-        string path = EditorUtility.OpenFilePanel("Pilih PDF", "", "pdf");
+        string path = UnityEditor.EditorUtility.OpenFilePanel("Pilih PDF", "", "pdf");
         if (!string.IsNullOrEmpty(path))
-        {
             TryLoadPdf(path);
-        }
+#elif UNITY_ANDROID
+    try
+    {
+        // SIGNATURE LAMA: PickFile(PickCallback, string mime)
+        NativeFilePicker.PickFile(
+            (path) =>
+            {
+                if (string.IsNullOrEmpty(path))
+                {
+                    UpdateInfo("Dibatalkan.");
+                    return;
+                }
+                TryLoadPdf(path);
+            },
+            "application/pdf" // <- STRING (bukan string[])
+        );
+    }
+    catch (System.Exception ex)
+    {
+        UpdateInfo("Gagal membuka file picker: " + ex.Message);
+    }
 #else
-        UpdateInfo("File picker runtime belum diset. Di Android/iOS gunakan plugin (SimpleFileBrowser/NativeFilePicker).");
+    UpdateInfo("File picker runtime belum diimplementasi untuk platform ini.");
 #endif
     }
+
+
+
 
     void TryLoadPdf(string path)
     {
@@ -91,7 +112,6 @@ public class PdfUploadUI : MonoBehaviour
         btnUpload.interactable = false;
         UpdateInfo("Mengunggah...");
 
-        // kunci path di S3 sisi backend ke uploads/pdf/, cukup kirim nama file ke presign
         client.UploadPdfBytes(selectedBytes, selectedName, s3key =>
         {
             UpdateInfo("✅ Upload OK → " + s3key);

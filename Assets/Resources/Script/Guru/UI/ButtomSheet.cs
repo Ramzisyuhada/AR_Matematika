@@ -19,6 +19,7 @@ public class BottomSheet : MonoBehaviour
 
     [SerializeField] private GameObject Button;
     [SerializeField] private GameObject Upload;
+    [SerializeField] private GameObject Parent;
 
     private const int IDX_GRADING = 0;
     private const int IDX_RANKING = 1;
@@ -26,6 +27,8 @@ public class BottomSheet : MonoBehaviour
 
     private void Awake()
     {
+        Parent.SetActive(false);
+
         // Validasi sederhana
         if (menus == null || menus.Count == 0)
             Debug.LogWarning($"{nameof(BottomSheet)}: 'menus' kosong. Isi minimal 1 panel.");
@@ -52,6 +55,7 @@ public class BottomSheet : MonoBehaviour
         Header1.SetActive(false);
         Scroll.SetActive(false);
         Upload.SetActive(true);
+        Parent.SetActive(true);
     }
     public void Render3D()
     {
@@ -68,6 +72,8 @@ public class BottomSheet : MonoBehaviour
         Header1.SetActive(true);
         Scroll.SetActive(true);
         Upload.SetActive(false);
+        Parent.SetActive(false);
+
         if (menus == null || menus.Count == 0) return;
 
         // Clamp index agar aman
