@@ -41,6 +41,7 @@ public class CameraOnCubeWebcam : MonoBehaviour
     void Awake()
     {
         if (!targetRenderer) targetRenderer = GetComponent<Renderer>();
+
     }
 
     void OnEnable()
@@ -137,7 +138,9 @@ public class CameraOnCubeWebcam : MonoBehaviour
             camMirror = webcam.videoVerticallyMirrored; // true jika perlu flip
         }
 
-        float rot = (rotationOffset + camRot) % 360f;
+        // float rot = (rotationOffset + camRot) % 360f;
+        float rot = Mathf.Repeat(rotationOffset - camRot, 360f);
+
         blitMat.SetFloat(PID_RotationDeg, rot);
         blitMat.SetFloat(PID_FlipX, (flipX ^ camMirror) ? 1f : 0f); // XOR agar mirror kamera ikut dibalik bila perlu
         blitMat.SetFloat(PID_FlipY, flipY ? 1f : 0f);

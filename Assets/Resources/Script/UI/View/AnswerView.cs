@@ -497,7 +497,7 @@ public class AnswerView : MonoBehaviour
         if (File.Exists(localPath))
         {
             Debug.Log("[OpenLocalOrDownload] File sudah ada, langsung buka: " + localPath);
-            OpenWithNativeShare(localPath);
+            OpenFile(localPath);
             return;
         }
 
@@ -586,7 +586,7 @@ public class AnswerView : MonoBehaviour
             Debug.Log($"[DownloadToFile] Saved {size} bytes at {savePath} (Content-Type={contentType})");
 
             // 5) Buka dengan NativeShare (chooser ke PDF viewer / app terkait)
-            OpenWithNativeShare(savePath);
+            OpenFile(savePath);
         }
     }
 
