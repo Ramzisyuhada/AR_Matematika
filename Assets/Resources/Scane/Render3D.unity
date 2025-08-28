@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.18028352, g: 0.22571376, b: 0.30692244, a: 1}
+  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -609,10 +609,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   apiKey: msy_s7aJa8LkOPKq2hCjYTPgEwHjZQL7u0D9BgOk
   imageUrl: https://suburfurniture.com/wp-content/uploads/2018/11/Uno-Kursi-Texas.jpg
-  fastMode: 0
-  enablePbr: 1
-  shouldRemesh: 1
-  shouldTexture: 1
+  fastMode: 1
+  enablePbr: 0
+  shouldRemesh: 0
+  shouldTexture: 0
   topology: triangle
   targetPolycount: 30000
   useSse: 1
