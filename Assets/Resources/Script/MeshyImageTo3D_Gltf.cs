@@ -76,7 +76,7 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
     public GameObject loadingObject;
     public GameObject Camera;
     public bool autoHideLoading = true;
-
+    public GameObject Rotate;
     // ======================= UI HOOKS & URL EVENTS =======================
     [Header("UI Hooks (opsional)")]
     [Range(0, 1f)] public float simulatedProgress;
@@ -442,6 +442,8 @@ if (parent) {
             loadingObject.SetActive(true);
         if (Camera != null) Camera.SetActive(false);
         if (!string.IsNullOrEmpty(text)) onStatusText?.Invoke(text);
+        Rotate.SetActive(true);
+
     }
 
     private void HideLoading()
