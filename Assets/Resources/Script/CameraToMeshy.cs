@@ -4,7 +4,7 @@ using System.IO;
 
 public class CameraToMeshy : MonoBehaviour
 {
-    public MeshyImageTo3D_RuntimeOnly meshyRunner; // drag komponen Meshy ke sini di Inspector
+    public MeshyImageTo3D_RuntimeOnlyV2 meshyRunner; // drag komponen Meshy ke sini di Inspector
 
     private WebCamTexture webcamTex;
 

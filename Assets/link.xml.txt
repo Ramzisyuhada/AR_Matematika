@@ -1,0 +1,11 @@
+<linker>
+  <assembly fullname="GLTFast">
+    <type fullname="GLTFast.GltfImport" preserve="all"/>
+  </assembly>
+  <assembly fullname="Draco">
+    <type fullname="*"/>
+  </assembly>
+  <assembly fullname="MeshOptimizer">
+    <type fullname="*"/>
+  </assembly>
+</linker>

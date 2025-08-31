@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 
-[RequireComponent(typeof(Renderer))]
-public class CameraOnCubeWebcam : MonoBehaviour
+public class CameraOnUIWebcam : MonoBehaviour
 {
-    [Header("Material Target (Cube)")]
-    public Renderer targetRenderer; // kosong => pakai Renderer di GO ini
+    [Header("UI Target (RawImage)")]
+    public RawImage targetRawImage;   // drag RawImage di Canvas ke sini
 
     [Header("Kompensasi Rotasi Manual (derajat)")]
-    [Tooltip("Tambahan rotasi untuk texture hasil blit (0/90/180/270/-90). Biasanya 0.")]
     public int rotationOffset = 0;
 
     [Header("Mirror (opsional)")]
@@ -17,7 +16,7 @@ public class CameraOnCubeWebcam : MonoBehaviour
     public bool flipY = false;
 
     [Header("Webcam")]
-    [Tooltip("Biarkan kosong untuk otomatis pilih kamera belakang (Android).")]
+    [Tooltip("Kosongkan untuk auto pilih kamera belakang (Android)")]
     public string preferredDeviceName;
     public int requestedWidth = 1280;
     public int requestedHeight = 720;
@@ -25,12 +24,13 @@ public class CameraOnCubeWebcam : MonoBehaviour
 
     [Header("Capture → Meshy")]
     public MeshyImageTo3D_RuntimeOnlyV2 meshyRunner; // drag komponen Meshy ke sini
+    public bool autoRunOnStart = false;               // kalau true, auto capture+run sekali saat start
 
     // Runtime
     private WebCamTexture webcam;
-    private Texture sourceTex;         // sumber untuk blit (webcam)
-    private RenderTexture rt;          // hasil blit (yang ditempel ke Cube & dicapture)
-    private Material blitMat;          // material blit (Hidden/RotateWebcamBlit)
+    private Texture sourceTex;
+    private RenderTexture rt;
+    private Material blitMat;
 
     // Shader prop IDs
     private static readonly int PID_RotationDeg = Shader.PropertyToID("_RotationDeg");
@@ -38,28 +38,20 @@ public class CameraOnCubeWebcam : MonoBehaviour
     private static readonly int PID_FlipY = Shader.PropertyToID("_FlipY");
     private static readonly int PID_MainTex = Shader.PropertyToID("_MainTex");
 
-    void Awake()
-    {
-        if (!targetRenderer) targetRenderer = GetComponent<Renderer>();
-
-    }
-
     void OnEnable()
     {
-        if (!targetRenderer) targetRenderer = GetComponent<Renderer>();
         StartCoroutine(StartCameraRoutine());
     }
 
     IEnumerator StartCameraRoutine()
     {
-        // Android/iOS: minta permission kamera
 #if UNITY_ANDROID || UNITY_IOS
         if (!Application.HasUserAuthorization(UserAuthorization.WebCam))
         {
             yield return Application.RequestUserAuthorization(UserAuthorization.WebCam);
         }
 #endif
-        // Tunggu daftar device siap
+        // Tunggu device list siap
         yield return new WaitForEndOfFrame();
 
         var devices = WebCamTexture.devices;
@@ -79,7 +71,7 @@ public class CameraOnCubeWebcam : MonoBehaviour
         }
 
 #if UNITY_ANDROID
-        // Otomatis pilih kamera belakang kalau ada (Android)
+        // default pilih belakang
         if (string.IsNullOrEmpty(deviceName))
         {
             foreach (var d in devices)
@@ -88,13 +80,12 @@ public class CameraOnCubeWebcam : MonoBehaviour
             }
         }
 #endif
-        // Fallback: ambil device pertama
         if (string.IsNullOrEmpty(deviceName)) deviceName = devices[0].name;
 
         webcam = new WebCamTexture(deviceName, requestedWidth, requestedHeight, requestedFPS);
         webcam.Play();
 
-        // Tunggu sampai webcam punya ukuran frame
+        // Tunggu sampai ada resolusi valid
         float timeout = 5f;
         while (webcam.width <= 16 && webcam.height <= 16 && timeout > 0f)
         {
@@ -108,16 +99,12 @@ public class CameraOnCubeWebcam : MonoBehaviour
 
         sourceTex = webcam;
         SetupBlitAndMaterial();
-    }
 
-    void OnDisable()
-    {
-        CleanupRT();
-        if (webcam != null)
+        if (autoRunOnStart)
         {
-            if (webcam.isPlaying) webcam.Stop();
-            Destroy(webcam);
-            webcam = null;
+            // kasih 1 frame supaya RT terisi
+            yield return new WaitForEndOfFrame();
+            CaptureAndRun();
         }
     }
 
@@ -129,23 +116,23 @@ public class CameraOnCubeWebcam : MonoBehaviour
 
     void DoBlit()
     {
-        // Rotasi dari kamera (mis. rotasi portrait di Android) + offset manual
         float camRot = 0f;
         bool camMirror = false;
         if (webcam != null)
         {
-            camRot = webcam.videoRotationAngle; // 0/90/180/270
-            camMirror = webcam.videoVerticallyMirrored; // true jika perlu flip
+            camRot = webcam.videoRotationAngle;        // 0/90/180/270
+            camMirror = webcam.videoVerticallyMirrored;
         }
 
-        // float rot = (rotationOffset + camRot) % 360f;
         float rot = Mathf.Repeat(rotationOffset - camRot, 360f);
 
         blitMat.SetFloat(PID_RotationDeg, rot);
-        blitMat.SetFloat(PID_FlipX, (flipX ^ camMirror) ? 1f : 0f); // XOR agar mirror kamera ikut dibalik bila perlu
+        blitMat.SetFloat(PID_FlipX, (flipX ^ camMirror) ? 1f : 0f); // XOR dgn mirror kamera
         blitMat.SetFloat(PID_FlipY, flipY ? 1f : 0f);
 
         Graphics.Blit(sourceTex, rt, blitMat);
+
+        if (targetRawImage) targetRawImage.texture = rt;
     }
 
     void SetupBlitAndMaterial()
@@ -161,7 +148,11 @@ public class CameraOnCubeWebcam : MonoBehaviour
 
         if (rt == null || rt.width != w || rt.height != h)
         {
-            CleanupRT();
+            if (rt != null)
+            {
+                if (rt.IsCreated()) rt.Release();
+                Destroy(rt);
+            }
             rt = new RenderTexture(w, h, 0, RenderTextureFormat.ARGB32)
             {
                 wrapMode = TextureWrapMode.Clamp,
@@ -171,35 +162,26 @@ public class CameraOnCubeWebcam : MonoBehaviour
             rt.Create();
         }
 
-        if (blitMat == null)
+        var shader = Shader.Find("Hidden/RotateWebcamBlit");
+        if (shader == null)
         {
-            var shader = Shader.Find("Hidden/RotateWebcamBlit");
-            if (shader == null)
-            {
-                Debug.LogError("Shader 'Hidden/RotateWebcamBlit' tidak ditemukan. Tambahkan shader di bawah ke project (File 2).");
-                return;
-            }
-            blitMat = new Material(shader);
+            Debug.LogError("Shader 'Hidden/RotateWebcamBlit' tidak ditemukan. Pastikan shader ini ada di project.");
+            return;
         }
+        if (blitMat != null) Destroy(blitMat);
+        blitMat = new Material(shader);
 
-        if (!targetRenderer) targetRenderer = GetComponent<Renderer>();
-        var mat = targetRenderer.material;
-        bool applied = false;
-
-        if (mat.HasProperty("_BaseMap")) { mat.SetTexture("_BaseMap", rt); applied = true; }
-        if (mat.HasProperty("_MainTex")) { mat.SetTexture("_MainTex", rt); applied = true; }
-
-        if (!applied)
-        {
-            var fallback = new Material(Shader.Find("Unlit/Texture"));
-            fallback.SetTexture(PID_MainTex, rt);
-            targetRenderer.material = fallback;
-            Debug.LogWarning("Material target tidak punya slot tekstur; memakai Unlit/Texture.");
-        }
+        if (targetRawImage) targetRawImage.texture = rt;
     }
 
-    void CleanupRT()
+    void OnDisable()
     {
+        if (webcam != null)
+        {
+            if (webcam.isPlaying) webcam.Stop();
+            Destroy(webcam);
+            webcam = null;
+        }
         if (rt != null)
         {
             if (rt.IsCreated()) rt.Release();
@@ -222,9 +204,9 @@ public class CameraOnCubeWebcam : MonoBehaviour
             Debug.LogError("meshyRunner belum di-assign di Inspector.");
             return;
         }
-        if (sourceTex == null || rt == null)
+        if (rt == null)
         {
-            Debug.LogError("Webcam/RenderTexture belum siap.");
+            Debug.LogError("RenderTexture belum siap.");
             return;
         }
         StartCoroutine(CaptureAndRunRoutine());
@@ -232,7 +214,7 @@ public class CameraOnCubeWebcam : MonoBehaviour
 
     IEnumerator CaptureAndRunRoutine()
     {
-        // Tunggu end-of-frame supaya RT sudah terisi blit terbaru
+        // pastikan frame terbaru sudah keblit
         yield return new WaitForEndOfFrame();
 
         Texture2D snap = GrabTexture2D(rt);
@@ -247,8 +229,8 @@ public class CameraOnCubeWebcam : MonoBehaviour
         string dataUri = $"data:image/png;base64,{base64}";
         Destroy(snap);
 
-        meshyRunner.imageUrl = dataUri;
-        Debug.Log("[CameraOnCubeWebcam] Capture OK, kirim ke Meshy…");
+        meshyRunner.imageUrl = dataUri;   // kirim sebagai Data URI
+        Debug.Log("[CameraOnUIWebcam] Capture OK, kirim ke Meshy…");
         meshyRunner.Run();
     }
 

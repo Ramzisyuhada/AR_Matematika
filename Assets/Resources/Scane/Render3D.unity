@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028352, g: 0.22571376, b: 0.30692244, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -420,7 +420,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 399c7d4efb06c4d4aaf0f7b41cddb787, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  meshyRunner: {fileID: 337258094}
+  meshyRunner: {fileID: 0}
 --- !u!225 &142595341
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -483,7 +483,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -618,12 +618,16 @@ MonoBehaviour:
   useSse: 1
   pollIntervalSeconds: 3
   timeoutSeconds: 300
-  runOnStart: 1
+  requestTimeoutSeconds: 30
+  runOnStart: 0
   startDelay: 0
   parentUnderThis: 1
   spawnLocalPosition: {x: 0, y: 0, z: 0}
   spawnLocalRotationEuler: {x: 0, y: 0, z: 0}
   spawnLocalScale: {x: 1, y: 1, z: 1}
+  loadingObject: {fileID: 18995861}
+  Camera: {fileID: 1098994172}
+  autoHideLoading: 1
   simulatedProgress: 0
   onProgress:
     m_PersistentCalls:
@@ -631,9 +635,13 @@ MonoBehaviour:
   onStatusText:
     m_PersistentCalls:
       m_Calls: []
-  loadingObject: {fileID: 18995861}
-  Camera: {fileID: 1098994172}
-  autoHideLoading: 1
+  onGlbUrlReceived:
+    m_PersistentCalls:
+      m_Calls: []
+  lastGlbUrl: 
+  lastFbxUrl: 
+  lastObjUrl: 
+  lastUsdzUrl: 
 --- !u!4 &337258095
 Transform:
   m_ObjectHideFlags: 0
@@ -643,7 +651,7 @@ Transform:
   m_GameObject: {fileID: 337258093}
   serializedVersion: 2
   m_LocalRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 1.18, z: 1.78}
+  m_LocalPosition: {x: -0.0086, y: 0.9666, z: -4.21}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -658,11 +666,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 337258093}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 07fff79038a2e384ab81c98b7e6e7cff, type: 3}
+  m_Script: {fileID: 11500000, guid: 8bbd69b165a49af4ea91e016efd831b5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   targetRawImage: {fileID: 225892088}
-  waitTimeoutSeconds: 10
+  rotationOffset: 0
+  flipX: 0
+  flipY: 0
+  preferredDeviceName: 
+  requestedWidth: 1280
+  requestedHeight: 720
+  requestedFPS: 30
+  meshyRunner: {fileID: 337258094}
+  autoRunOnStart: 0
 --- !u!1 &391501708
 GameObject:
   m_ObjectHideFlags: 0
@@ -779,8 +795,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1098994177}
-        m_TargetAssemblyTypeName: CameraOnCubeRotFix, Assembly-CSharp
+      - m_Target: {fileID: 337258096}
+        m_TargetAssemblyTypeName: CameraOnUIWebcam, Assembly-CSharp
         m_MethodName: CaptureAndRun
         m_Mode: 1
         m_Arguments:
@@ -1785,7 +1801,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!65 &1098994173
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1884,15 +1900,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e18c1c6d11ebcc649899d4aa1a626899, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetRenderer: {fileID: 0}
+  targetRenderer: {fileID: 1098994174}
   rotationOffset: 0
   flipX: 0
   flipY: 0
   preferredDeviceName: 
-  requestedWidth: 1280
-  requestedHeight: 720
+  requestedWidth: 640
+  requestedHeight: 360
   requestedFPS: 30
-  meshyRunner: {fileID: 337258094}
+  meshyRunner: {fileID: 0}
 --- !u!1 &1301441864
 GameObject:
   m_ObjectHideFlags: 0
@@ -2799,7 +2815,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 399c7d4efb06c4d4aaf0f7b41cddb787, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  meshyRunner: {fileID: 337258094}
+  meshyRunner: {fileID: 0}
 --- !u!114 &2130002060
 MonoBehaviour:
   m_ObjectHideFlags: 0

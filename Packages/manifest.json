@@ -3,6 +3,7 @@
     "com.ptc.vuforia.engine": "file:com.ptc.vuforia.engine-11.3.4.tgz",
     "com.unity.adaptiveperformance.google.android": "5.1.4",
     "com.unity.adaptiveperformance.samsung.android": "5.0.0",
+    "com.unity.cloud.draco": "5.2.0",
     "com.unity.cloud.gltfast": "6.13.1",
     "com.unity.collab-proxy": "2.8.2",
     "com.unity.device-simulator.devices": "1.0.0",
@@ -49,5 +50,14 @@
     "com.unity.modules.vr": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
     "com.unity.modules.xr": "1.0.0"
-  }
+  },
+  "scopedRegistries": [
+    {
+      "name": "OpenUPM",
+      "url": "https://package.openupm.com",
+      "scopes": [
+        "com.atteneder"
+      ]
+    }
+  ]
 }
