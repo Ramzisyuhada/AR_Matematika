@@ -5,37 +5,37 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 0
+  - enabled: 1
     path: Assets/Resources/Scane/Login.unity
     guid: 622aa467d3655734f98a522b821c4d75
-  - enabled: 0
+  - enabled: 1
     path: Assets/Resources/Scane/Home.unity
     guid: d11121dd2e2ba1f40b71999d730597ef
-  - enabled: 0
+  - enabled: 1
     path: Assets/Resources/Scane/Materi_2.unity
     guid: 82a5c5b7c38b29f44949b8e0c6ff760e
-  - enabled: 0
+  - enabled: 1
     path: Assets/Resources/Scane/AR.unity
     guid: 9a64509c721403c419861aeef4d312a1
-  - enabled: 0
+  - enabled: 1
     path: Assets/Resources/Scane/Pilihan Materi.unity
     guid: 1a6aa798161fd3d46b122b068839efb6
-  - enabled: 0
+  - enabled: 1
     path: Assets/Resources/Scane/Angket.unity
     guid: 6e8ef2d92e7a11b4c9d3f46a74180295
-  - enabled: 0
+  - enabled: 1
     path: Assets/Resources/Scane/Latihan.unity
     guid: 559854d2dc57b624bbea2f1ac00b3cf5
-  - enabled: 0
+  - enabled: 1
     path: Assets/Resources/Scane/Pilihan Latihan.unity
     guid: 46f03939a0efd414d85d3544e9e5f209
-  - enabled: 0
+  - enabled: 1
     path: Assets/Resources/Scane/Guru.unity
     guid: 57a99d55592af4c4592e6dd5f533f911
-  - enabled: 0
+  - enabled: 1
     path: Assets/Resources/Scane/Guru Rangking.unity
     guid: c369fcc15eb69be468c3026014466bcb
-  - enabled: 0
+  - enabled: 1
     path: Assets/Resources/Scane/PostTest.unity
     guid: 8a6013e4d5845334f868e138a42bcccb
   - enabled: 1
