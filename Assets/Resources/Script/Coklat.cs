@@ -63,8 +63,8 @@ public class Coklat : MonoBehaviour
             Debug.Log("Sedang Landscape");
         }
 
-        HandleTouchInput();
-        HandleMouseInput();
+        //HandleTouchInput();
+        //HandleMouseInput();
     }
 
     void HandleTouchInput()

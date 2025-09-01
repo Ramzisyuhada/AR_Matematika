@@ -16,4 +16,14 @@ public class Rotate3D : MonoBehaviour
     {
         transform.Rotate(Vector3.down * rotateSpeed, Space.World);
     }
+
+    public void RotateUp()
+    {
+        transform.Rotate(Vector3.right * rotateSpeed, Space.World);
+    }
+
+    public void RotateDown()
+    {
+        transform.Rotate(Vector3.left * rotateSpeed, Space.World);
+    }
 }
