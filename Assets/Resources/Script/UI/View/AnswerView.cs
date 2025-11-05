@@ -36,6 +36,7 @@ public class AnswerView : MonoBehaviour
     [SerializeField] private GameObject JawabanSoal1Object;
     [SerializeField] private GameObject JawabanSoal2Object;
     [SerializeField] private GameObject JawabanSoal3Object;
+    [SerializeField] private GameObject Pemberitahuan;
 
     [Header("Siswa")]
     [SerializeField] private GameObject UploadFile;
@@ -53,6 +54,7 @@ public class AnswerView : MonoBehaviour
     private string SubmissionId;
     private string QuestionId;
 
+    
 
     private string s3Key;
 
@@ -710,13 +712,55 @@ public class AnswerView : MonoBehaviour
         return unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
     }
 
+    void ShowPemberitahuan()
+    {
+        // Aktifkan GameObject
+        Pemberitahuan.SetActive(true);
+
+        // Reset scale dulu
+        Pemberitahuan.transform.localScale = Vector3.zero;
+
+        // Animasi muncul (zoom in halus)
+        LeanTween.scale(Pemberitahuan, Vector3.one, 0.4f).setEaseOutBack();
+
+        // Efek getar sedikit (shake)
+        LeanTween.moveLocalX(Pemberitahuan, Pemberitahuan.transform.localPosition.x + 10f, 0.05f)
+            .setEaseShake()
+            .setDelay(0.4f);
+
+        // Hilang otomatis setelah 2 detik (opsional)
+        LeanTween.delayedCall(2f, () =>
+        {
+            LeanTween.scale(Pemberitahuan, Vector3.zero, 0.3f)
+                .setEaseInBack()
+                .setOnComplete(() => Pemberitahuan.SetActive(false));
+        });
+    }
 
     public void PostNilai()
     {
+        string isiNilaiText = IsiNilai.text.Trim();
 
-        if (float.TryParse(IsiNilai.text, out float nilaiFloat))
+        // Cek input kosong
+        if (string.IsNullOrEmpty(isiNilaiText))
         {
+            ShowPemberitahuan();
+            Debug.LogError("Input nilai tidak boleh kosong.");
+            return;
+        }
 
+        // Cek apakah input hanya berisi angka (dan boleh ada titik desimal)
+        if (!System.Text.RegularExpressions.Regex.IsMatch(isiNilaiText, @"^[0-9]+(\.[0-9]+)?$"))
+        {
+            ShowPemberitahuan();
+
+            Debug.LogError("Input nilai harus berupa angka saja.");
+            return;
+        }
+
+        // Coba ubah ke float
+        if (float.TryParse(isiNilaiText, out float nilaiFloat))
+        {
             StartCoroutine(ViewModel1.UpdateGrade(
                 Nilai,
                 nilaiFloat,
@@ -726,9 +770,10 @@ public class AnswerView : MonoBehaviour
         }
         else
         {
-            Debug.LogError("Input nilai tidak valid, gagal parse ke float.");
+            Debug.LogError("Input nilai tidak valid, gagal konversi ke angka.");
         }
     }
+
 
 
 

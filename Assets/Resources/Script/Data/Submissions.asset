@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 605b799717258734c943f321462da36c, type: 3}
   m_Name: Submissions
   m_EditorClassIdentifier: 
-  baseUrl: https://107-23-209-11.nip.io/api/
+  baseUrl: https://34.165.156.205.nip.io/api/
   getById: submissions/{id}/{}
   update: grades/{id}
   getBy: grades

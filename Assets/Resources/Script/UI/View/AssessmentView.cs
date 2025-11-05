@@ -278,6 +278,7 @@ public class AssessmentView : MonoBehaviour
         Hasil.SetActive(true);
         Aplod.SetActive(false);
         LoadingScreen.SetActive(false);
+        SceneManager.LoadScene("Home");
 
         string fileNameWithoutExt = Path.GetFileNameWithoutExtension(s3key);
         

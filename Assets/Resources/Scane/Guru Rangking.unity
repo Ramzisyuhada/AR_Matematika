@@ -3834,7 +3834,7 @@ GameObject:
   - component: {fileID: 1530186563}
   - component: {fileID: 1530186562}
   m_Layer: 5
-  m_Name: Scroll View
+  m_Name: Gaya Belajar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4473,7 +4473,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 667142153}
   m_HandleRect: {fileID: 667142152}
   m_Direction: 0
-  m_Value: 0
+  m_Value: 1
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:

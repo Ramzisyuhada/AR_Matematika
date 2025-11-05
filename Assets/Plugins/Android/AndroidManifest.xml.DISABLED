@@ -1,48 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          xmlns:tools="http://schemas.android.com/tools"
           package="com.unity3d.player">
-    <cache-path name="cache" path="." />
-    <files-path name="files" path="." />
-    <external-cache-path name="external_cache" path="." />
-    <external-files-path name="external_files" path="." />
-    <!-- Izin baca file (Android 13+ hanya untuk media, PDF bukan media, jadi SAF lebih aman) -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+
+	<!-- Wajib untuk UnityWebRequest -->
+	<uses-permission android:name="android.permission.INTERNET" />
+
+	<!-- (Opsional) untuk akses file lokal, ingat Android 13+ batasi ini -->
+	<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
                      android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
-                     tools:ignore="ScopedStorage" /> <!-- hanya kalau kamu pakai full storage access (tidak direkomendasikan) -->
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
 
-    <application
+	<application
         android:label="@string/app_name"
-        android:icon="@mipmap/app_icon"
-        android:requestLegacyExternalStorage="true"
-        tools:replace="android:requestLegacyExternalStorage">
+        android:icon="@mipmap/app_icon">
 
-        <activity
+		<activity
             android:name="com.unity3d.player.UnityPlayerActivity"
             android:theme="@style/UnityThemeSelector"
             android:launchMode="singleTask"
             android:screenOrientation="fullSensor"
             android:exported="true"
             android:configChanges="locale|fontScale|keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-            <meta-data android:name="unityplayer.UnityActivity" android:value="true" />
-        </activity>
+			<intent-filter>
+				<action android:name="android.intent.action.MAIN" />
+				<category android:name="android.intent.category.LAUNCHER" />
+			</intent-filter>
+			<meta-data android:name="unityplayer.UnityActivity" android:value="true" />
+		</activity>
 
-        <!-- FileProvider untuk share file (opsional) -->
-        <provider
+		<!-- FileProvider (opsional, kalau perlu share file) -->
+		<provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
-            <meta-data
+			<meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
-        </provider>
+		</provider>
 
-    </application>
+	</application>
 </manifest>

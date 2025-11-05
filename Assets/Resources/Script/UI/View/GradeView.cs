@@ -16,6 +16,8 @@ public class GradeView : MonoBehaviour
     [SerializeField] private Transform listParent;
     [SerializeField] private GameObject cardPrefab;
     [SerializeField] private GameObject LoadingScreen;
+
+    [SerializeField] private TMP_InputField InputField;
     [Header("Assets")]
     [SerializeField] private Texture2D[] Icon;
 
@@ -27,9 +29,15 @@ public class GradeView : MonoBehaviour
         SubmissionId = PlayerPrefs.GetString("SubmissionId", string.Empty); // <-- ganti
         UserId = PlayerPrefs.GetString("user_identifier", "Tidak Ada");
         Refresh();
+        InputField.text = "";
     }
     string Assesment = "A_001";
-
+    public void RefreshAgain()
+    {
+        SetLoading(false); // pastikan awalnya off
+        InputField.text = "";
+        Refresh();
+    }
     public void SetAssesment (string value)
     {
         Assesment = value;

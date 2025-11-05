@@ -2,29 +2,30 @@
 using SimpleJSON;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using TMPro;
-using UnityEditor;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using System.Text.RegularExpressions;
-
-using UnityEngine.Networking;
 
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
+
 public class QuestionView : MonoBehaviour
 {
     [Header("Refs")]
     public PdfPresignClient client;
     public Button btnBukaFile;
     public Button btnUpload;
+    public GameObject Loading;
+
     private string s3Key;
 
-    public Text infoText; // boleh ganti TextMeshProUGUI jika pakai TMP
+    public Text infoText; // boleh ganti ke TextMeshProUGUI jika pakai TMP
+
     [Header("Logic")]
     [SerializeField] private QuestionVM ViewModel;
 
@@ -36,6 +37,18 @@ public class QuestionView : MonoBehaviour
     private byte[] selectedBytes;
     private string selectedName;
 
+    [Header("UI Notif")]
+    public GameObject ObjekFileTerlaluBesar; // drag di Inspector (misal panel merah)
+    public GameObject ObjekBerhasil;
+
+    // ----------------- Utility Busy -----------------
+    void Busy(bool on)
+    {
+        if (Loading != null) Loading.SetActive(on);
+        if (btnUpload != null) btnUpload.interactable = !on;
+        if (btnBukaFile != null) btnBukaFile.interactable = !on;
+    }
+
     void Awake()
     {
         if (btnBukaFile != null && btnUpload != null)
@@ -43,9 +56,9 @@ public class QuestionView : MonoBehaviour
             btnBukaFile.onClick.AddListener(OnPickFile);
             btnUpload.onClick.AddListener(OnUpload);
             btnUpload.interactable = false;
-
         }
 
+        if (Loading != null) Loading.SetActive(false); // off di awal
         UpdateInfo("Belum ada file dipilih");
     }
 
@@ -53,14 +66,14 @@ public class QuestionView : MonoBehaviour
     {
         Refresh();
     }
+
     private void Refresh()
     {
-        // Misal "Q005" adalah id soal; silakan ganti sesuai kebutuhan
-       StartCoroutine( ViewModel.Get("Q005",
+        // NOTE: Busy() di Refresh bukan terkait download file pengguna, jadi tidak diubah.
+        Busy(true);
+        StartCoroutine(ViewModel.Get("Q005",
             onJson: raw =>
             {
-                Debug.Log("Hello world");
-
                 try
                 {
                     var root = JSON.Parse(raw);
@@ -84,25 +97,21 @@ public class QuestionView : MonoBehaviour
                     }
 
                     s3Key = qText;
-                    Debug.Log("[Refresh] question_text: " + qText);
-
-                    if (NamaFile == null)
-                    {
-                        Debug.LogError("[Refresh] NamaFile == null (assign gagal)");
-                        return; // <-- sekarang return hanya saat null
-                    }
-
-                    NamaFile.text = qText;
-                    Debug.Log("[Refresh] Berhasil set NamaFile");
+                    if (NamaFile != null) NamaFile.text = qText;
                 }
                 catch (Exception ex)
                 {
                     Debug.LogError("[Refresh] Exception: " + ex);
                 }
+                finally
+                {
+                    Busy(false);
+                }
             },
             onErr: err =>
             {
                 Debug.LogError("[Refresh] Error ViewModel.Get: " + err);
+                Busy(false);
             }
         ));
     }
@@ -110,35 +119,33 @@ public class QuestionView : MonoBehaviour
     void OnPickFile()
     {
 #if UNITY_EDITOR
-        string path = UnityEditor.EditorUtility.OpenFilePanel("Pilih PDF", "", "pdf");
+        string path = EditorUtility.OpenFilePanel("Pilih PDF", "", "pdf");
         if (!string.IsNullOrEmpty(path))
             TryLoadPdf(path);
 #elif UNITY_ANDROID
-    try
-    {
-        // SIGNATURE LAMA: PickFile(PickCallback, string mime)
-        NativeFilePicker.PickFile(
-            (path) =>
-            {
-                if (string.IsNullOrEmpty(path))
+        try
+        {
+            NativeFilePicker.PickFile(
+                (path) =>
                 {
-                    UpdateInfo("Dibatalkan.");
-                    return;
-                }
-                TryLoadPdf(path);
-            },
-            "application/pdf" // <- STRING (bukan string[])
-        );
-    }
-    catch (System.Exception ex)
-    {
-        UpdateInfo("Gagal membuka file picker: " + ex.Message);
-    }
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        UpdateInfo("Dibatalkan.");
+                        return;
+                    }
+                    TryLoadPdf(path);
+                },
+                "application/pdf"
+            );
+        }
+        catch (System.Exception ex)
+        {
+            UpdateInfo("Gagal membuka file picker: " + ex.Message);
+        }
 #else
-    UpdateInfo("File picker runtime belum diimplementasi untuk platform ini.");
+        UpdateInfo("File picker runtime belum diimplementasi untuk platform ini.");
 #endif
     }
-
 
     void TryLoadPdf(string path)
     {
@@ -153,6 +160,11 @@ public class QuestionView : MonoBehaviour
                 UpdateInfo("✖ " + reason);
                 btnUpload.interactable = false;
                 selectedPath = null; selectedBytes = null; selectedName = null;
+
+                // Khusus > 5MB → tampilkan panel
+                if (!string.IsNullOrEmpty(reason) && reason.StartsWith("Ukuran >") && ObjekFileTerlaluBesar != null)
+                    Show5mb();
+
                 return;
             }
 
@@ -169,6 +181,42 @@ public class QuestionView : MonoBehaviour
         }
     }
 
+    void Show5mb()
+    {
+        if (ObjekFileTerlaluBesar == null) return;
+
+        ObjekFileTerlaluBesar.SetActive(true);
+        ObjekFileTerlaluBesar.transform.localScale = Vector3.zero;
+        LeanTween.scale(ObjekFileTerlaluBesar, Vector3.one, 0.4f).setEaseOutBack();
+        LeanTween.moveLocalX(ObjekFileTerlaluBesar, ObjekFileTerlaluBesar.transform.localPosition.x + 10f, 0.05f)
+            .setEaseShake()
+            .setDelay(0.4f);
+        LeanTween.delayedCall(2f, () =>
+        {
+            LeanTween.scale(ObjekFileTerlaluBesar, Vector3.zero, 0.3f)
+                .setEaseInBack()
+                .setOnComplete(() => ObjekFileTerlaluBesar.SetActive(false));
+        });
+    }
+
+    void ShowPemberitahuan()
+    {
+        if (ObjekBerhasil == null) return;
+
+        ObjekBerhasil.SetActive(true);
+        ObjekBerhasil.transform.localScale = Vector3.zero;
+        LeanTween.scale(ObjekBerhasil, Vector3.one, 0.4f).setEaseOutBack();
+        LeanTween.moveLocalX(ObjekBerhasil, ObjekBerhasil.transform.localPosition.x + 10f, 0.05f)
+            .setEaseShake()
+            .setDelay(0.4f);
+        LeanTween.delayedCall(2f, () =>
+        {
+            LeanTween.scale(ObjekBerhasil, Vector3.zero, 0.3f)
+                .setEaseInBack()
+                .setOnComplete(() => ObjekBerhasil.SetActive(false));
+        });
+    }
+
     void OnUpload()
     {
         if (selectedBytes == null)
@@ -176,50 +224,48 @@ public class QuestionView : MonoBehaviour
             UpdateInfo("Pilih file dulu.");
             return;
         }
-        btnUpload.interactable = false;
+
+        // Upload ke storage (ini bukan “download pengguna”, jadi tidak mengubah kebijakan Loading)
+        Busy(true);
         UpdateInfo("Mengunggah...");
 
-        // kunci path di S3 sisi backend ke uploads/pdf/, cukup kirim nama file ke presign
         client.UploadPdfBytes(selectedBytes, selectedName, s3key =>
         {
             UpdateInfo("✅ Upload OK → " + s3key);
+
             client.GetDownloadLink(s3key, presignUrl =>
             {
-                // Tampilkan URL ke user
                 UpdateInfo($"✅ Upload OK\nDownload: {presignUrl}");
-                string s = PlayerPrefs.GetString("SubmissionId", "-");
 
                 string jsonBody = JsonConvert.SerializeObject(new
                 {
-
                     question_text = s3key
                 });
 
-                StartCoroutine(ViewModel.Put("Q005", jsonBody, onJson: res =>
-                {
-                    Debug.Log("Presigned URL: " + presignUrl);
-                    btnUpload.interactable = true;
-
-
-                }, onErr: Err =>
-                {
-                    Debug.LogWarning("Error : " + Err);
-
-                }));
-
-
-
+                StartCoroutine(ViewModel.Put("Q005", jsonBody,
+                    onJson: res =>
+                    {
+                        if (ObjekBerhasil != null) ShowPemberitahuan();
+                        Debug.Log("Presigned URL: " + presignUrl);
+                        Busy(false);
+                    },
+                    onErr: Err =>
+                    {
+                        Debug.LogWarning("Error simpan: " + Err);
+                        Busy(false);
+                    }
+                ));
             },
-      err =>
-      {
-          UpdateInfo("Upload OK, tapi gagal ambil link: " + err);
-          btnUpload.interactable = true;
-      });
+            err =>
+            {
+                UpdateInfo("Upload OK, tapi gagal ambil link: " + err);
+                Busy(false);
+            });
         },
         err =>
         {
             UpdateInfo("✖ " + err);
-            btnUpload.interactable = true;
+            Busy(false);
         });
     }
 
@@ -230,10 +276,18 @@ public class QuestionView : MonoBehaviour
             reason = "Hanya .pdf yang diperbolehkan";
             return false;
         }
-        if (bytes == null || bytes.Length == 0) { reason = "File kosong"; return false; }
+        if (bytes == null || bytes.Length == 0)
+        {
+            reason = "File kosong";
+            return false;
+        }
 
         long max = (long)maxSizeMB * 1024L * 1024L;
-        if (bytes.Length > max) { reason = $"Ukuran > {maxSizeMB} MB tidak diizinkan"; return false; }
+        if (bytes.Length > max)
+        {
+            reason = $"Ukuran > {maxSizeMB} MB tidak diizinkan";
+            return false;
+        }
 
         // header %PDF-
         if (bytes.Length < 5 || bytes[0] != 0x25 || bytes[1] != 0x50 || bytes[2] != 0x44 || bytes[3] != 0x46 || bytes[4] != 0x2D)
@@ -251,6 +305,7 @@ public class QuestionView : MonoBehaviour
         if (infoText != null) infoText.text = msg;
         Debug.Log(msg);
     }
+
     private void OpenWithNativeShare(string path)
     {
         if (!File.Exists(path))
@@ -260,13 +315,12 @@ public class QuestionView : MonoBehaviour
         }
 
 #if UNITY_ANDROID && !UNITY_EDITOR
-    // Detect MIME dari ekstensi supaya viewer tepat
-    string mime = GetMimeTypeForShare(path);
-    new NativeShare()
-        .AddFile(path, mime)
-        .SetSubject("Open file")
-        .SetText(" ")
-        .Share(); // tampil chooser → pilih app yang bisa buka
+        string mime = GetMimeTypeForShare(path);
+        new NativeShare()
+            .AddFile(path, mime)
+            .SetSubject("Open file")
+            .SetText(" ")
+            .Share();
 #else
         Application.OpenURL(path);
 #endif
@@ -290,7 +344,6 @@ public class QuestionView : MonoBehaviour
         return "*/*";
     }
 
-
     public void OnClickOpenLocalOrDownload()
     {
         if (string.IsNullOrWhiteSpace(s3Key))
@@ -303,6 +356,7 @@ public class QuestionView : MonoBehaviour
         if (string.IsNullOrWhiteSpace(fileName)) fileName = "file.pdf";
         string localPath = Path.Combine(Application.persistentDataPath, fileName);
 
+        // Jika file sudah ada lokal → buka TANPA loading
         if (File.Exists(localPath))
         {
             Debug.Log("[OpenLocalOrDownload] File lokal sudah ada → buka");
@@ -310,16 +364,21 @@ public class QuestionView : MonoBehaviour
             return;
         }
 
-        // Belum ada → presign & download
+        // Belum ada → presign + DOWNLOAD (aktifkan loading HANYA di jalur ini)
         UpdateInfo("Mengambil link unduh...");
+        Busy(true);
         client.GetDownloadLink(
             s3Key,
             url => StartCoroutine(DownloadToFile(url, fileName)),
-            err => UpdateInfo("[OpenLocalOrDownload] Presign gagal: " + err)
+            err =>
+            {
+                UpdateInfo("[OpenLocalOrDownload] Presign gagal: " + err);
+                Busy(false);
+            }
         );
     }
 
-    // ============ DOWNLOAD ============
+    // ============ DOWNLOAD ============ (Loading aktif hanya di jalur ini)
     private IEnumerator DownloadToFile(string url, string fallbackFileName)
     {
         // 1) Tentukan nama file yang rapi
@@ -346,6 +405,7 @@ public class QuestionView : MonoBehaviour
             if (req.result != UnityWebRequest.Result.Success)
             {
                 Debug.LogError($"Download failed: {req.responseCode} {req.error}");
+                Busy(false); // matikan loading meskipun gagal
                 yield break;
             }
 
@@ -393,79 +453,76 @@ public class QuestionView : MonoBehaviour
             // 5) Buka dengan NativeShare (chooser ke PDF viewer / app terkait)
             OpenWithNativeShare(savePath);
         }
+
+        // 6) MATIKAN LOADING setelah download selesai (sukses/gagal sudah di-handle)
+        Busy(false);
     }
 
     // ============ OPEN FILE (ANDROID aman dengan FileProvider) ============
     private void OpenFile(string localPath)
     {
 #if UNITY_ANDROID && !UNITY_EDITOR
-    try
-    {
-        if (!System.IO.File.Exists(localPath))
+        try
         {
-            Debug.LogError("[OpenFile] File tidak ditemukan: " + localPath);
-            return;
+            if (!System.IO.File.Exists(localPath))
+            {
+                Debug.LogError("[OpenFile] File tidak ditemukan: " + localPath);
+                return;
+            }
+
+            long size = new System.IO.FileInfo(localPath).Length;
+            Debug.Log($"[OpenFile] path={localPath} size={size}B");
+
+            AndroidJavaClass intentClass = new AndroidJavaClass("android.content.Intent");
+            AndroidJavaObject intent = new AndroidJavaObject("android.content.Intent");
+            intent.Call<AndroidJavaObject>("setAction", intentClass.GetStatic<string>("ACTION_VIEW"));
+
+            AndroidJavaObject activity = GetUnityActivity();
+            string authority = Application.identifier + ".fileprovider";
+            AndroidJavaClass uriClass = new AndroidJavaClass("androidx.core.content.FileProvider");
+            AndroidJavaObject fileObj = new AndroidJavaObject("java.io.File", localPath);
+            AndroidJavaObject uri = uriClass.CallStatic<AndroidJavaObject>("getUriForFile", activity, authority, fileObj);
+
+            string mime = GetMimeType(localPath);
+            intent.Call<AndroidJavaObject>("setDataAndType", uri, mime);
+
+            const int FLAG_GRANT_READ_URI_PERMISSION = 1;
+            const int FLAG_ACTIVITY_CLEAR_TOP = 0x04000000;
+            intent.Call<AndroidJavaObject>("addFlags", FLAG_GRANT_READ_URI_PERMISSION);
+            intent.Call<AndroidJavaObject>("addFlags", FLAG_ACTIVITY_CLEAR_TOP);
+
+            AndroidJavaClass clipDataClass = new AndroidJavaClass("android.content.ClipData");
+            AndroidJavaObject clip = clipDataClass.CallStatic<AndroidJavaObject>(
+                "newUri",
+                new AndroidJavaObject("java.lang.String", "File"),
+                new AndroidJavaObject("java.lang.String", "text/uri-list"),
+                uri
+            );
+            intent.Call("setClipData", clip);
+
+            AndroidJavaObject chooser =
+                intentClass.CallStatic<AndroidJavaObject>("createChooser", intent, new AndroidJavaObject("java.lang.String", "Buka dengan"));
+
+            Debug.Log($"[OpenFile] uri={uri?.Call<string>("toString")} mime={mime} authority={authority}");
+            activity.Call("startActivity", chooser);
         }
+        catch (AndroidJavaException aje)
+        {
+            Debug.LogError("[OpenFile] AndroidJavaException: " + aje);
+            if (aje.ToString().Contains("ActivityNotFoundException"))
+                Debug.LogWarning("Tidak ada app viewer. Install PDF viewer (Google Drive/Adobe/WPS).");
 
-        long size = new System.IO.FileInfo(localPath).Length;
-        Debug.Log($"[OpenFile] path={localPath} size={size}B");
-
-        AndroidJavaClass intentClass = new AndroidJavaClass("android.content.Intent");
-        AndroidJavaObject intent = new AndroidJavaObject("android.content.Intent");
-        intent.Call<AndroidJavaObject>("setAction", intentClass.GetStatic<string>("ACTION_VIEW"));
-
-        AndroidJavaObject activity = GetUnityActivity();
-        string authority = Application.identifier + ".fileprovider";
-        AndroidJavaClass uriClass = new AndroidJavaClass("androidx.core.content.FileProvider");
-        AndroidJavaObject fileObj = new AndroidJavaObject("java.io.File", localPath);
-        AndroidJavaObject uri = uriClass.CallStatic<AndroidJavaObject>("getUriForFile", activity, authority, fileObj);
-
-        string mime = GetMimeType(localPath);
-        intent.Call<AndroidJavaObject>("setDataAndType", uri, mime);
-
-        const int FLAG_GRANT_READ_URI_PERMISSION = 1;
-        const int FLAG_ACTIVITY_CLEAR_TOP = 0x04000000;
-        intent.Call<AndroidJavaObject>("addFlags", FLAG_GRANT_READ_URI_PERMISSION);
-        intent.Call<AndroidJavaObject>("addFlags", FLAG_ACTIVITY_CLEAR_TOP);
-
-        // ClipData agar grant URI lebih konsisten di beberapa OEM
-        AndroidJavaClass clipDataClass = new AndroidJavaClass("android.content.ClipData");
-        AndroidJavaObject clip = clipDataClass.CallStatic<AndroidJavaObject>(
-            "newUri",
-            new AndroidJavaObject("java.lang.String", "File"),
-            new AndroidJavaObject("java.lang.String", "text/uri-list"),
-            uri
-        );
-        intent.Call("setClipData", clip);
-
-        // (Opsional) chooser – gunakan String sbg judul (CharSequence tidak bisa di-new)
-        AndroidJavaObject chooser =
-            intentClass.CallStatic<AndroidJavaObject>("createChooser", intent, new AndroidJavaObject("java.lang.String", "Buka dengan"));
-
-        Debug.Log($"[OpenFile] uri={uri?.Call<string>("toString")} mime={mime} authority={authority}");
-        activity.Call("startActivity", chooser); // atau pakai 'intent' langsung
-    }
-    catch (AndroidJavaException aje)
-    {
-        Debug.LogError("[OpenFile] AndroidJavaException: " + aje);
-        if (aje.ToString().Contains("ActivityNotFoundException"))
-            Debug.LogWarning("Tidak ada app viewer. Install PDF viewer (Google Drive/Adobe/WPS).");
-
-        Application.OpenURL("file://" + localPath); // fallback
-    }
-    catch (System.Exception e)
-    {
-        Debug.LogError("[OpenFile] Exception: " + e.Message);
-        Application.OpenURL("file://" + localPath); // fallback
-    }
+            Application.OpenURL("file://" + localPath);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("[OpenFile] Exception: " + e.Message);
+            Application.OpenURL("file://" + localPath);
+        }
 #else
-        // Editor / non-Android
         Application.OpenURL(localPath);
 #endif
     }
-
-
-
 
     private string GetMimeType(string path)
     {

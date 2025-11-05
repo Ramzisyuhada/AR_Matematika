@@ -135,23 +135,27 @@ public class PdfPresignClient : MonoBehaviour
         var put = new UnityWebRequest(presignedUrl, UnityWebRequest.kHttpVerbPUT);
         put.uploadHandler = new UploadHandlerRaw(data);
         put.downloadHandler = new DownloadHandlerBuffer();
-        put.SetRequestHeader("Content-Type", "application/pdf");
 
-        // 🔴 WAJIB: matikan chunked supaya ada Content-Length
+        // WAJIB match dgn yang DISIGN di Laravel:
+        put.SetRequestHeader("Content-Type", "application/pdf");
+        put.SetRequestHeader("x-goog-content-sha256", "UNSIGNED-PAYLOAD");
+
+        // Penting utk GCS V4: harus ada Content-Length (tidak chunked)
         put.chunkedTransfer = false;
 
-        // (opsional) hindari 100-continue jika server rewel
-        // put.SetRequestHeader("Expect", "");
-
+        // Jangan set "Expect" manual (Unity sudah ngatur; warning kamu benar)
         yield return put.SendWebRequest();
 
         var code = (int)put.responseCode;
-        var txt = put.downloadHandler != null ? put.downloadHandler.text : "";
-        Debug.Log($"[PUT RESP] code={code} result={put.result} body={txt}");
+        var body = put.downloadHandler != null ? put.downloadHandler.text : "";
+        Debug.Log($"[PUT RESP] code={code} result={put.result} body={body}");
 
         if (put.result == UnityWebRequest.Result.Success) onOk?.Invoke();
-        else onErr?.Invoke($"{code} {put.error} {txt}");
+        else onErr?.Invoke($"{code} {put.error} {body}");
     }
+
+
+
 
 
     IEnumerator GetFromS3(string url, Action<byte[]> onOk, Action<string> onErr)
