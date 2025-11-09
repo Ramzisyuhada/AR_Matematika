@@ -29,7 +29,7 @@ public class GradeView : MonoBehaviour
         SubmissionId = PlayerPrefs.GetString("SubmissionId", string.Empty); // <-- ganti
         UserId = PlayerPrefs.GetString("user_identifier", "Tidak Ada");
         Refresh();
-        InputField.text = "";
+        if (InputField != null)InputField.text = "";
     }
     string Assesment = "A_001";
     public void RefreshAgain()

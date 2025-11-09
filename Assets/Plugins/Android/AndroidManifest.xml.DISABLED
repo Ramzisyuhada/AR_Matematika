@@ -2,16 +2,23 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.unity3d.player">
 
-	<!-- Wajib untuk UnityWebRequest -->
+	<!-- UnityWebRequest & internet -->
 	<uses-permission android:name="android.permission.INTERNET" />
 
-	<!-- (Opsional) untuk akses file lokal, ingat Android 13+ batasi ini -->
-	<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-                     android:maxSdkVersion="32" />
+	<!-- Storage permission (Android 13+ tidak perlu) -->
+	<uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+	<!-- (Opsional hanya jika ingin save ke external storage) -->
+	<uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
 	<application
         android:label="@string/app_name"
-        android:icon="@mipmap/app_icon">
+        android:icon="@mipmap/app_icon"
+        android:requestLegacyExternalStorage="true">
 
 		<activity
             android:name="com.unity3d.player.UnityPlayerActivity"
@@ -20,23 +27,27 @@
             android:screenOrientation="fullSensor"
             android:exported="true"
             android:configChanges="locale|fontScale|keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode">
+
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />
 				<category android:name="android.intent.category.LAUNCHER" />
 			</intent-filter>
+
 			<meta-data android:name="unityplayer.UnityActivity" android:value="true" />
 		</activity>
 
-		<!-- FileProvider (opsional, kalau perlu share file) -->
+		<!-- ✅ FileProvider supaya file bisa dibuka via PDF/Word Viewer -->
 		<provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
+
 			<meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
 		</provider>
 
 	</application>
+
 </manifest>

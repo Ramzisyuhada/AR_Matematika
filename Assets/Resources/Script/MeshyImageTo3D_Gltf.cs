@@ -2,10 +2,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Networking;
+using UnityEngine.Rendering;
+using UnityEngine.UI;           // UI Button
 using GLTFast;
 
 public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
@@ -13,8 +14,8 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
     // ======================= QUALITY / STARTUP =======================
     private void Awake()
     {
-        QualitySettings.asyncUploadTimeSlice = 4;
-        QualitySettings.asyncUploadBufferSize = 16; // MB
+        QualitySettings.asyncUploadTimeSlice = 8;
+        QualitySettings.asyncUploadBufferSize = 32; // MB
         QualitySettings.asyncUploadPersistentBuffer = true;
 
         QualitySettings.streamingMipmapsActive = true;
@@ -25,7 +26,7 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
         Application.targetFrameRate = 30;
 
 #if UNITY_ANDROID && !UNITY_EDITOR
-        useSse = false; // SSE sering tidak stabil di Android
+        useSse = false; // SSE kurang stabil di Android
 #endif
     }
 
@@ -43,10 +44,12 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
     public string imageUrl = "https://example.com/your_image.png";
 
     // ======================= MODE/OPTIONS =======================
-    [Header("Mode Cepat")]
-    public bool fastMode = true;
+    [Header("Preset: ColorFast (BERTEKSTUR) vs Fast (tanpa tekstur)")]
+    public bool colorFastPreset = true; // ON = minta tekstur (sesuai foto)
+    [Tooltip("Fast mode tanpa tekstur (akan otomatis kebalikan dari colorFastPreset)")]
+    public bool fastMode = false;       // dikendalikan otomatis
 
-    [Header("Options (non-fast mode)")]
+    [Header("Options (non-fast mode manual)")]
     public bool enablePbr = true;
     public bool shouldRemesh = true;
     public bool shouldTexture = true;
@@ -59,6 +62,7 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
     public float pollIntervalSeconds = 3f;
     public float timeoutSeconds = 600f;
     public int requestTimeoutSeconds = 30;
+    public int sseTimeoutSeconds = 0; // 0 = infinite (disarankan untuk SSE)
 
     // ======================= AUTOSTART/SPAWN =======================
     [Header("Autostart")]
@@ -67,9 +71,15 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
 
     [Header("Spawn Options")]
     public bool parentUnderThis = true;
+    public Transform spawnParent; // container model
     public Vector3 spawnLocalPosition = Vector3.zero;
     public Vector3 spawnLocalRotationEuler = Vector3.zero;
     public Vector3 spawnLocalScale = Vector3.one;
+
+    [Header("Buttons")]
+    public Button btnHancurkan; // drag Button Hancurkan
+    public Button btnPhoto;     // drag Button Photo
+    public Button btnMode;      // drag tombol untuk toggle ColorFast / Fast
 
     // ======================= LOADING UI =======================
     [Header("Loading UI")]
@@ -77,6 +87,7 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
     public GameObject Camera;
     public bool autoHideLoading = true;
     public GameObject Rotate;
+
     // ======================= UI HOOKS & URL EVENTS =======================
     [Header("UI Hooks (opsional)")]
     [Range(0, 1f)] public float simulatedProgress;
@@ -98,10 +109,74 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
     private bool _cancelRequested;
     private Coroutine _running;
 
+    // timing mark
+    private float _tMark;
+
+    // turunkan sementara resolusi tekstur saat loading
+    [Header("Texture Load Throttle")]
+    public bool lowerTextureResWhileLoading = true;
+
+    // ======================= ALERT (GameObject ONLY) =======================
+    [Header("Alert GameObjects (NO TEXT)")]
+    public GameObject alertOn;   // muncul saat ColorFast ON
+    public GameObject alertOff;  // muncul saat Fast ON
+
+    public float alertAnimIn = 0.18f;
+    public float alertHold = 0.8f;
+    public float alertAnimOut = 0.18f;
+
+    private void ShowAlertObject(GameObject obj)
+    {
+        if (obj == null) return;
+        obj.transform.localScale = new Vector3(0.25f, 0.25f, 0.25f);
+        obj.SetActive(true);
+
+        LeanTween.scale(obj, Vector3.one, alertAnimIn)
+            .setEaseOutBack()
+            .setOnComplete(() =>
+            {
+                LeanTween.delayedCall(alertHold, () =>
+                {
+                    LeanTween.scale(obj, new Vector3(0.25f, 0.25f, 1f), alertAnimOut)
+                        .setEaseInBack()
+                        .setOnComplete(() => obj.SetActive(false));
+                });
+            });
+    }
+
     // ======================= UNITY LIFECYCLE =======================
     private void Start()
     {
+        if (spawnParent == null)
+        {
+            var go = new GameObject("SpawnedContainer");
+            go.transform.SetParent(this.transform, false);
+            spawnParent = go.transform;
+        }
+
+        if (btnHancurkan != null)
+        {
+            btnHancurkan.onClick.RemoveAllListeners();
+            btnHancurkan.onClick.AddListener(HancurkanModel);
+            btnHancurkan.interactable = false;
+        }
+
+        if (btnMode != null)
+        {
+            btnMode.onClick.RemoveAllListeners();
+            btnMode.onClick.AddListener(OnClickModeButton);
+        }
+
+        // sinkronkan fastMode <-> colorFastPreset
+        SyncPresetFlags();
+        UpdatePhotoButtonState();
+
         if (runOnStart) StartCoroutine(AutoStartRoutine());
+    }
+
+    private void SyncPresetFlags()
+    {
+        fastMode = !colorFastPreset; // selalu kebalikan
     }
 
     private IEnumerator AutoStartRoutine()
@@ -110,13 +185,29 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
         Run();
     }
 
+    // ======================= BUTTON HANDLERS =======================
+    public void OnClickModeButton()
+    {
+        // Toggle: jika sebelumnya ColorFast ON, sekarang OFF (berarti Fast ON)
+        colorFastPreset = !colorFastPreset;
+        SyncPresetFlags();
+
+        // Alert
+        if (colorFastPreset) ShowAlertObject(alertOn); else ShowAlertObject(alertOff);
+
+        EmitStatus(colorFastPreset ? "Mode: COLOR FAST (bertekstur)" : "Mode: FAST (tanpa tekstur)");
+    }
+
     // ======================= PUBLIC CONTROLS =======================
     [ContextMenu("Run Image->3D")]
     public void Run()
     {
+     
+        if (btnPhoto != null) btnPhoto.interactable = false; // sedang proses
         if (_running != null) { Warn("Masih berjalan. Cancel dulu untuk restart."); return; }
         _cancelRequested = false;
         ShowLoading("Menyiapkan...");
+        _tMark = Time.realtimeSinceStartup;
         _running = StartCoroutine(RunFlowRoutine());
     }
 
@@ -127,6 +218,8 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
         if (_running != null) { StopCoroutine(_running); _running = null; }
         EmitStatus("Dibatalkan oleh pengguna.");
         EmitProgress(0f);
+        SetDestroyButtonState(false);
+        UpdatePhotoButtonState();
         if (autoHideLoading) HideLoading();
     }
 
@@ -134,6 +227,7 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
     private IEnumerator RunFlowRoutine()
     {
         EmitStatus("Submitting job...");
+        Mark("Mulai submit");
 
         var payload = BuildPayload();
         string payloadJson = JsonUtility.ToJson(payload);
@@ -155,6 +249,7 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
                     CaptureModelUrls(direct.model_urls);
                     onGlbUrlReceived?.Invoke(lastGlbUrl);
                     EmitStatus("Mengunduh GLB (direct)...");
+                    Mark("Submit direct OK → unduh GLB");
                     yield return DownloadAndLoadGlbBytesRoutine(lastGlbUrl);
                     yield break;
                 }
@@ -166,6 +261,7 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
         if (useSse)
         {
             bool finished = false;
+            Mark("Submit OK → tunggu SSE");
             yield return StartCoroutine(SseStreamRoutine(_taskId, ok => finished = ok));
             if (!finished && !_cancelRequested)
             {
@@ -175,12 +271,14 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
         }
         else
         {
+            Mark("Submit OK → polling");
             yield return StartCoroutine(PollStatusRoutine(_taskId));
         }
     }
 
     private ImageTo3DPayload BuildPayload()
     {
+        // Fast: TANPA tekstur
         if (fastMode)
         {
             return new ImageTo3DPayload
@@ -188,11 +286,27 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
                 image_url = imageUrl,
                 enable_pbr = false,
                 should_remesh = false,
-                should_texture = false,
+                should_texture = false, // penting: no texture ⇒ objek putih
                 topology = "triangle",
                 target_polycount = 300
             };
         }
+
+        // ColorFast: BERTEKSTUR (sesuai foto)
+        if (colorFastPreset)
+        {
+            return new ImageTo3DPayload
+            {
+                image_url = imageUrl,
+                enable_pbr = false,
+                should_remesh = false,
+                should_texture = true,  // penting: minta tekstur
+                topology = "triangle",
+                target_polycount = Mathf.Clamp(2000, 100, 10000)
+            };
+        }
+
+        // Manual (kalau suatu saat mau dipakai)
         return new ImageTo3DPayload
         {
             image_url = imageUrl,
@@ -209,12 +323,13 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
     {
         done?.Invoke(false);
         EmitStatus("Menunggu progres (SSE)...");
+        Mark("Mulai SSE");
 
         using (var req = new UnityWebRequest(BuildStreamUrl(taskId), UnityWebRequest.kHttpVerbGET))
         {
             var handler = new SseDownloadHandlerV2();
             req.downloadHandler = handler;
-            req.timeout = requestTimeoutSeconds;
+            req.timeout = sseTimeoutSeconds; // 0 = infinite
             req.SetRequestHeader("Accept", "text/event-stream");
             req.SetRequestHeader("Cache-Control", "no-cache");
             req.SetRequestHeader("Authorization", $"Bearer {apiKey}");
@@ -235,6 +350,7 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
                         CaptureModelUrls(st.model_urls);
                         onGlbUrlReceived?.Invoke(lastGlbUrl);
                         EmitStatus("Selesai. Mengunduh GLB...");
+                        Mark("SSE: SUCCEEDED → unduh GLB");
                         if (!string.IsNullOrEmpty(lastGlbUrl))
                         {
                             yield return DownloadAndLoadGlbBytesRoutine(lastGlbUrl);
@@ -271,7 +387,7 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
             }
         }
 
-        yield return null; // biar lanjut ke polling
+        yield return null; // lanjut polling bila perlu
     }
 
     // ======================= POLLING (FALLBACK) =======================
@@ -298,6 +414,7 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
                         CaptureModelUrls(st.model_urls);
                         onGlbUrlReceived?.Invoke(lastGlbUrl);
                         EmitStatus("Selesai. Mengunduh GLB...");
+                        Mark("Polling: SUCCEEDED → unduh GLB");
                         if (!string.IsNullOrEmpty(lastGlbUrl))
                             yield return DownloadAndLoadGlbBytesRoutine(lastGlbUrl);
                         else
@@ -317,7 +434,6 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
                 }
             }
 
-            // jeda polling
             float dt = 0f;
             while (dt < pollIntervalSeconds)
             {
@@ -329,6 +445,7 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
 
         Fail("Timeout menunggu hasil.");
     }
+
     [ContextMenu("Test Load Duck (GLB)")]
     public void TestLoadDuck()
     {
@@ -336,6 +453,7 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
             "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb"
         ));
     }
+
     // ======================= DOWNLOAD + LOAD =======================
     private IEnumerator DownloadAndLoadGlbBytesRoutine(string url)
     {
@@ -345,75 +463,132 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
         ShowLoading("Mengunduh & memuat model...");
         Debug.Log($"[MeshyV2] Device: {SystemInfo.deviceModel} | GPU: {SystemInfo.graphicsDeviceName} | API: {SystemInfo.graphicsDeviceType}");
 
+        int oldMasterTexLimit = QualitySettings.globalTextureMipmapLimit;
+        if (lowerTextureResWhileLoading) QualitySettings.globalTextureMipmapLimit = 1;
+
         try
         {
+            // 1) HEAD untuk Content-Length
+            long? expectedSize = null;
+            yield return TryGetRemoteFileSize(url, s => expectedSize = s);
+            if (expectedSize.HasValue)
+                EmitStatus($"Ukuran file (server): {FormatBytes(expectedSize.Value)}");
+            else
+                EmitStatus("Ukuran file (server) tidak tersedia.");
+
 #if UNITY_ANDROID && !UNITY_EDITOR
-string path = System.IO.Path.Combine(Application.persistentDataPath, "meshy_tmp.glb");
+            string path = System.IO.Path.Combine(Application.persistentDataPath, "meshy_tmp.glb");
 
-// 1) Download ke file
-using (var req = UnityWebRequest.Get(url)) {
-    req.timeout = requestTimeoutSeconds;
-    req.downloadHandler = new DownloadHandlerFile(path);
-    var op = req.SendWebRequest();
-    while (!op.isDone) {
-        if (_cancelRequested) { Fail("Dibatalkan."); yield break; }
-        if (Time.realtimeSinceStartup > hardDeadline) { Fail("Timeout saat download."); yield break; }
-        yield return null;
-    }
-    if (!IsReqOK(req)) { Fail($"Download gagal: {req.responseCode} {req.error}"); yield break; }
-}
+            // 2) Download ke file + progres
+            using (var req = UnityWebRequest.Get(url)) {
+                req.timeout = requestTimeoutSeconds;
+                req.downloadHandler = new DownloadHandlerFile(path);
+                var op = req.SendWebRequest();
+                var tStart = Time.realtimeSinceStartup;
 
-// 2) Load via glTFast dari file://
-var gltf = new GLTFast.GltfImport();
-string uri = path.StartsWith("file://", StringComparison.OrdinalIgnoreCase) ? path : "file://" + path;
+                while (!op.isDone) {
+                    if (_cancelRequested) { Fail("Dibatalkan."); yield break; }
+                    if (Time.realtimeSinceStartup > hardDeadline) { Fail("Timeout saat download."); yield break; }
 
-var loadTask = gltf.Load(uri); // Task<bool>
-while (!loadTask.IsCompleted) {
-    if (_cancelRequested) { Fail("Dibatalkan."); yield break; }
-    if (Time.realtimeSinceStartup > hardDeadline) { Fail("Timeout saat load."); yield break; }
-    yield return null;
-}
-if (!loadTask.Result) { Fail("GLTFast load gagal (Android). Cek Draco/KTX/Meshopt + ARM64."); yield break; }
+#if UNITY_2020_1_OR_NEWER
+                    long got = (long)req.downloadedBytes;
+                    string sizeText = expectedSize.HasValue ? $"{FormatBytes(got)} / {FormatBytes(expectedSize.Value)}" : $"{FormatBytes(got)}";
+                    double speed = (Time.realtimeSinceStartup - tStart) > 0 ? req.downloadedBytes / (Time.realtimeSinceStartup - tStart) : 0;
+                    EmitStatus($"Mengunduh… {req.downloadProgress:P0}  {sizeText}  ({FormatBytes((long)speed)}/s)");
+#else
+                    EmitStatus($"Mengunduh… {req.downloadProgress:P0}");
+#endif
+                    EmitProgress(Mathf.Clamp01(req.downloadProgress));
+                    yield return null;
+                }
 
-// 3) Instantiate async (lebih aman di perangkat)
-var parent = parentUnderThis ? this.transform : null;
-var instTask = gltf.InstantiateMainSceneAsync(parent);
-while (!instTask.IsCompleted) {
-    if (_cancelRequested) { Fail("Dibatalkan."); yield break; }
-    yield return null;
-}
-if (!instTask.Result) { Fail("Instantiate gagal (Android)."); yield break; }
+                if (!IsReqOK(req)) { Fail($"Download gagal: {req.responseCode} {req.error}"); yield break; }
 
-// 4) Terapkan transform
-if (parent) {
-    for (int i = 0; i < parent.childCount; i++) {
-        var r = parent.GetChild(i);
-        r.gameObject.SetActive(true);
-        //SetLayerRecursively(r.gameObject, 0);
-        r.localPosition = spawnLocalPosition;
-        r.localRotation = Quaternion.Euler(spawnLocalRotationEuler);
-        r.localScale    = spawnLocalScale;
-    }
-}
+                long fileSize = 0;
+                try { fileSize = new System.IO.FileInfo(path).Length; } catch {}
+                EmitStatus($"Selesai unduh: {FormatBytes(fileSize)} dalam {(Time.realtimeSinceStartup - tStart):0.0}s");
+            }
+
+            // 3) Load via glTFast dari file://
+            var gltf = new GLTFast.GltfImport();
+            string uri = path.StartsWith("file://", StringComparison.OrdinalIgnoreCase) ? path : "file://" + path;
+            Mark("Mulai load GLB (Android)");
+
+            var loadTask = gltf.Load(uri); // Task<bool>
+            while (!loadTask.IsCompleted) {
+                if (_cancelRequested) { Fail("Dibatalkan."); yield break; }
+                if (Time.realtimeSinceStartup > hardDeadline) { Fail("Timeout saat load."); yield break; }
+                yield return null;
+            }
+            if (!loadTask.Result) { Fail("GLTFast load gagal (Android). Cek Draco/KTX/Meshopt + ARM64."); yield break; }
+
+            // 4) Instantiate async
+            var parent = spawnParent != null ? spawnParent : (parentUnderThis ? this.transform : null);
+            Mark("Mulai instantiate (Android)");
+            var instTask = gltf.InstantiateMainSceneAsync(parent);
+            while (!instTask.IsCompleted) {
+                if (_cancelRequested) { Fail("Dibatalkan."); yield break; }
+                yield return null;
+            }
+            if (!instTask.Result) { Fail("Instantiate gagal (Android)."); yield break; }
+
+            // 5) Transform + materials
+            if (parent) {
+                for (int i = 0; i < parent.childCount; i++) {
+                    var r = parent.GetChild(i);
+                    r.gameObject.SetActive(true);
+                    r.localPosition = spawnLocalPosition;
+                    r.localRotation = Quaternion.Euler(spawnLocalRotationEuler);
+                    r.localScale    = spawnLocalScale;
+                }
+                // kalau fastMode (tanpa tekstur), sederhanakan material supaya ringan
+                if (fastMode) SimplifyMaterialsKeepColor(parent);
+            }
+            Mark("Instantiate selesai (Android)");
+            SetDestroyButtonState(true);
+            UpdatePhotoButtonState();
 
 #else
+            // ===== Non-Android: buffer RAM + progres =====
             byte[] glbBytes = null;
             using (var req = UnityWebRequest.Get(url))
             {
                 req.timeout = requestTimeoutSeconds;
                 var op = req.SendWebRequest();
+
+                var tStart = Time.realtimeSinceStartup;
                 while (!op.isDone)
                 {
                     if (_cancelRequested) { Fail("Dibatalkan."); yield break; }
                     if (Time.realtimeSinceStartup > hardDeadline) { Fail("Timeout saat download."); yield break; }
+
+#if UNITY_2020_1_OR_NEWER
+                    long got = (long)req.downloadedBytes;
+                    string sizeText = expectedSize.HasValue ? $"{FormatBytes(got)} / {FormatBytes(expectedSize.Value)}" : $"{FormatBytes(got)}";
+                    double speed = (Time.realtimeSinceStartup - tStart) > 0 ? req.downloadedBytes / (Time.realtimeSinceStartup - tStart) : 0;
+                    EmitStatus($"Mengunduh… {req.downloadProgress:P0}  {sizeText}  ({FormatBytes((long)speed)}/s)");
+#else
+                    EmitStatus($"Mengunduh… {req.downloadProgress:P0}");
+#endif
+                    EmitProgress(Mathf.Clamp01(req.downloadProgress));
                     yield return null;
                 }
+
                 if (!IsReqOK(req)) { Fail($"Download gagal: {req.responseCode} {req.error}"); yield break; }
+
+#if UNITY_2020_1_OR_NEWER
+                long finalBytes = (long)req.downloadedBytes;
+                EmitStatus($"Selesai unduh: {FormatBytes(finalBytes)} dalam {(Time.realtimeSinceStartup - tStart):0.0}s");
+#else
+                EmitStatus($"Selesai unduh: {FormatBytes(req.downloadHandler.data?.LongLength ?? 0)}");
+#endif
                 glbBytes = req.downloadHandler.data;
             }
             if (glbBytes == null || glbBytes.Length == 0) { Fail("Data GLB kosong."); yield break; }
 
+            // Load glTFast dari byte[]
             var gltf = new GLTFast.GltfImport();
+            Mark("Mulai load GLB (Editor/Non-Android)");
             var t = gltf.LoadGltfBinary(glbBytes);
             while (!t.IsCompleted)
             {
@@ -423,15 +598,84 @@ if (parent) {
             }
             if (!t.Result) { Fail("GLTFast load gagal (Editor/Non-Android)."); yield break; }
 
-            var parent = parentUnderThis ? this.transform : null;
+            // Instantiate
+            var parent = spawnParent != null ? spawnParent : (parentUnderThis ? this.transform : null);
+            Mark("Mulai instantiate (Editor/Non-Android)");
             if (!gltf.InstantiateMainScene(parent)) { Fail("Instantiate gagal (Editor/Non-Android)."); yield break; }
+
+            // Transform + materials
+            if (parent)
+            {
+                for (int i = 0; i < parent.childCount; i++)
+                {
+                    var r = parent.GetChild(i);
+                    r.gameObject.SetActive(true);
+                    r.localPosition = spawnLocalPosition;
+                    r.localRotation = Quaternion.Euler(spawnLocalRotationEuler);
+                    r.localScale = spawnLocalScale;
+                }
+                if (fastMode) SimplifyMaterialsKeepColor(parent);
+            }
+            Mark("Instantiate selesai (Editor/Non-Android)");
+            SetDestroyButtonState(true);
+            UpdatePhotoButtonState();
 #endif
 
             Done();
         }
         finally
         {
+            if (lowerTextureResWhileLoading) QualitySettings.globalTextureMipmapLimit = oldMasterTexLimit;
             if (autoHideLoading) HideLoading();
+        }
+    }
+
+    // ======================= MATERIAL HELPERS =======================
+    private Shader TryGetSimpleShaderForPipeline()
+    {
+        var rp = GraphicsSettings.currentRenderPipeline;
+
+        if (rp == null)
+        {
+            var s = Shader.Find("Mobile/Diffuse");
+            if (s == null) s = Shader.Find("Standard");
+            return s;
+        }
+        else
+        {
+            var s = Shader.Find("Universal Render Pipeline/Simple Lit");
+            if (s == null) s = Shader.Find("Universal Render Pipeline/Lit");
+            if (s == null) s = Shader.Find("HDRP/Lit");
+            return s;
+        }
+    }
+
+    // Mode tanpa tekstur: material ringan (hapus map berat, jaga warna/tint yang ada)
+    private void SimplifyMaterialsKeepColor(Transform parent)
+    {
+        if (!parent) return;
+
+        var targetShader = TryGetSimpleShaderForPipeline();
+
+        foreach (var r in parent.GetComponentsInChildren<Renderer>(true))
+        {
+            var mats = r.materials;
+            for (int i = 0; i < mats.Length; i++)
+            {
+                var mat = mats[i];
+                if (!mat) continue;
+
+                if (mat.HasProperty("_BumpMap")) { mat.SetTexture("_BumpMap", null); mat.DisableKeyword("_NORMALMAP"); }
+                if (mat.HasProperty("_MetallicGlossMap")) { mat.SetTexture("_MetallicGlossMap", null); }
+                if (mat.HasProperty("_OcclusionMap")) { mat.SetTexture("_OcclusionMap", null); }
+                if (mat.HasProperty("_SpecGlossMap")) { mat.SetTexture("_SpecGlossMap", null); }
+                if (mat.HasProperty("_ParallaxMap")) { mat.SetTexture("_ParallaxMap", null); mat.DisableKeyword("_PARALLAXMAP"); }
+                mat.DisableKeyword("_DETAIL_MULX2");
+                mat.DisableKeyword("_EMISSION");
+
+                if (targetShader != null)
+                    mat.shader = targetShader;
+            }
         }
     }
 
@@ -442,15 +686,14 @@ if (parent) {
             loadingObject.SetActive(true);
         if (Camera != null) Camera.SetActive(false);
         if (!string.IsNullOrEmpty(text)) onStatusText?.Invoke(text);
-        Rotate.SetActive(true);
-
+        if (Rotate != null) Rotate.SetActive(true);
     }
 
     private void HideLoading()
     {
         if (loadingObject != null && loadingObject.activeSelf)
             loadingObject.SetActive(false);
-     //   if (Camera != null) Camera.SetActive(true);
+        //if (Rotate != null) Rotate.SetActive(false);
     }
 
     private void UpdateProgressUi(string status, float progress)
@@ -469,7 +712,7 @@ if (parent) {
 
     private void EmitStatus(string msg)
     {
-        Log(msg);
+        Debug.Log($"[MeshyV2] {msg}");
         onStatusText?.Invoke(msg);
     }
 
@@ -485,17 +728,53 @@ if (parent) {
         Debug.LogError($"[MeshyV2] {msg}");
         onStatusText?.Invoke(msg);
         _running = null;
+        SetDestroyButtonState(false);
+        UpdatePhotoButtonState();
         if (autoHideLoading) HideLoading();
     }
 
-    private static void Log(string msg) => Debug.Log($"[MeshyV2] {msg}");
     private static void Warn(string msg) => Debug.LogWarning($"[MeshyV2] {msg}");
+
+    private void Mark(string label)
+    {
+        var now = Time.realtimeSinceStartup;
+        Debug.Log($"[MeshyV2] {label} @ {now:0.00}s (+{now - _tMark:0.00}s)");
+        _tMark = now;
+    }
 
     private static void SetLayerRecursively(GameObject go, int layer)
     {
         go.layer = layer;
         var t = go.transform;
         for (int i = 0; i < t.childCount; i++) SetLayerRecursively(t.GetChild(i).gameObject, layer);
+    }
+
+    private void SetDestroyButtonState(bool on)
+    {
+        if (btnHancurkan != null) btnHancurkan.interactable = on;
+    }
+
+    private void UpdatePhotoButtonState()
+    {
+        if (btnPhoto == null || spawnParent == null) return;
+        bool hasObject = spawnParent.childCount > 0;
+        //btnPhoto.interactable = !hasObject; // aktif kalau belum ada objek
+    }
+
+    [ContextMenu("Hancurkan Model")]
+    public void HancurkanModel()
+    {
+        if (spawnParent == null) return;
+        btnPhoto.interactable = true;
+        for (int i = spawnParent.childCount - 1; i >= 0; i--)
+        {
+            var child = spawnParent.GetChild(i);
+            Destroy(child.gameObject);
+        }
+
+        EmitStatus("Model dihancurkan.");
+        SetDestroyButtonState(false);
+        UpdatePhotoButtonState(); // aktifkan kembali btnPhoto
     }
 
     // ======================= API CONTRACTS =======================
@@ -582,6 +861,7 @@ if (parent) {
         return !r.isNetworkError && !r.isHttpError;
 #endif
     }
+
     private static bool IsSuccess(string s) => s.Equals("SUCCEEDED", StringComparison.OrdinalIgnoreCase);
     private static bool IsFail(string s) => s.Equals("FAILED", StringComparison.OrdinalIgnoreCase);
 
@@ -595,6 +875,34 @@ if (parent) {
 
         if (!string.IsNullOrEmpty(lastGlbUrl))
             EmitStatus("GLB URL: " + lastGlbUrl);
+    }
+
+    // ======================= SIZE / PROGRESS HELPERS =======================
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        double kb = bytes / 1024.0;
+        if (kb < 1024) return $"{kb:0.0} KB";
+        double mb = kb / 1024.0;
+        if (mb < 1024) return $"{mb:0.0} MB";
+        double gb = mb / 1024.0;
+        return $"{gb:0.00} GB";
+    }
+
+    private IEnumerator TryGetRemoteFileSize(string url, Action<long?> onDone)
+    {
+        using (var head = UnityWebRequest.Head(url))
+        {
+            head.timeout = requestTimeoutSeconds;
+            yield return head.SendWebRequest();
+            if (IsReqOK(head))
+            {
+                string len = head.GetResponseHeader("Content-Length");
+                if (long.TryParse(len, out var size)) onDone(size);
+                else onDone(null);
+            }
+            else onDone(null);
+        }
     }
 
     // ======================= NESTED SSE HANDLER =======================

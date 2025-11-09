@@ -341,6 +341,8 @@ public class AnswerView : MonoBehaviour
     // Panggil ini saat user klik Next (soal 1 -> 2 -> 3)
     public void SaveCurrentAnswer()
     {
+        Debug.Log(InputJawaban.text);
+
         if (InputJawaban == null || string.IsNullOrWhiteSpace(InputJawaban.text))
         {
             Debug.LogWarning("[SaveCurrentAnswer] Input jawaban kosong.");
@@ -366,7 +368,7 @@ public class AnswerView : MonoBehaviour
         else pendingAnswers.Add(payload);
 
         Debug.Log($"[SaveCurrentAnswer] cached {qid}: {payload.answer_text}");
-
+        InputJawaban.text = "";
         // Kosongkan input untuk UX rapi
         InputJawaban.text = string.Empty;
 
@@ -774,7 +776,38 @@ public class AnswerView : MonoBehaviour
         }
     }
 
+    public void BackToPreviousQuestion()
+    {
+        // minimal soal 2 atau 3 yang bisa mundur
+        if (NoSoal <= 1) return;
 
+        // mundur
+        NoSoal--;
+
+        // pulihkan jawaban yang pernah disimpan (kalau ada)
+        string qid = "Q" + NoSoal.ToString("000");
+        var idx = pendingAnswers.FindIndex(p => p.question_id == qid);
+        if (idx >= 0)
+        {
+            if (InputJawaban != null)
+                InputJawaban.text = pendingAnswers[idx].answer_text;
+        }
+        else
+        {
+            if (InputJawaban != null)
+                InputJawaban.text = string.Empty;
+        }
+
+        // kalau kamu punya UI indikator nomor soal, update di sini
+        // e.g. labelSoal.text = $"Soal {NoSoal}";
+    }
+
+    public void BackFromUploadToQuestions()
+    {
+        if (UploadFile) UploadFile.SetActive(false);
+        if (Canvas2) Canvas2.SetActive(true);
+        if (Canvas1) Canvas1.SetActive(true);
+    }
 
 
 }

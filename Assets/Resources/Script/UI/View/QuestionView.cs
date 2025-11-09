@@ -306,44 +306,6 @@ public class QuestionView : MonoBehaviour
         Debug.Log(msg);
     }
 
-    private void OpenWithNativeShare(string path)
-    {
-        if (!File.Exists(path))
-        {
-            Debug.LogWarning("[OpenWithNativeShare] File tidak ada: " + path);
-            return;
-        }
-
-#if UNITY_ANDROID && !UNITY_EDITOR
-        string mime = GetMimeTypeForShare(path);
-        new NativeShare()
-            .AddFile(path, mime)
-            .SetSubject("Open file")
-            .SetText(" ")
-            .Share();
-#else
-        Application.OpenURL(path);
-#endif
-    }
-
-    private string GetMimeTypeForShare(string path)
-    {
-        string p = path.ToLowerInvariant();
-        if (p.EndsWith(".pdf")) return "application/pdf";
-        if (p.EndsWith(".jpg") || p.EndsWith(".jpeg")) return "image/jpeg";
-        if (p.EndsWith(".png")) return "image/png";
-        if (p.EndsWith(".doc")) return "application/msword";
-        if (p.EndsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-        if (p.EndsWith(".ppt")) return "application/vnd.ms-powerpoint";
-        if (p.EndsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-        if (p.EndsWith(".xls")) return "application/vnd.ms-excel";
-        if (p.EndsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-        if (p.EndsWith(".txt")) return "text/plain";
-        if (p.EndsWith(".mp4")) return "video/mp4";
-        if (p.EndsWith(".zip")) return "application/zip";
-        return "*/*";
-    }
-
     public void OnClickOpenLocalOrDownload()
     {
         if (string.IsNullOrWhiteSpace(s3Key))
@@ -360,7 +322,7 @@ public class QuestionView : MonoBehaviour
         if (File.Exists(localPath))
         {
             Debug.Log("[OpenLocalOrDownload] File lokal sudah ada → buka");
-            OpenWithNativeShare(localPath);
+            OpenFile(localPath); // ← GANTI: selalu pakai viewer sesuai MIME
             return;
         }
 
@@ -450,8 +412,8 @@ public class QuestionView : MonoBehaviour
             long size = new FileInfo(savePath).Length;
             Debug.Log($"[DownloadToFile] Saved {size} bytes at {savePath} (Content-Type={contentType})");
 
-            // 5) Buka dengan NativeShare (chooser ke PDF viewer / app terkait)
-            OpenWithNativeShare(savePath);
+            // 5) Buka dengan viewer sesuai MIME
+            OpenFile(savePath); // ← GANTI: bukan NativeShare
         }
 
         // 6) MATIKAN LOADING setelah download selesai (sukses/gagal sudah di-handle)
@@ -494,7 +456,7 @@ public class QuestionView : MonoBehaviour
             AndroidJavaClass clipDataClass = new AndroidJavaClass("android.content.ClipData");
             AndroidJavaObject clip = clipDataClass.CallStatic<AndroidJavaObject>(
                 "newUri",
-                new AndroidJavaObject("java.lang.String", "File"),
+                new AndroidJavaObject("java.lang.CharSequence", "File"),
                 new AndroidJavaObject("java.lang.String", "text/uri-list"),
                 uri
             );
@@ -510,7 +472,7 @@ public class QuestionView : MonoBehaviour
         {
             Debug.LogError("[OpenFile] AndroidJavaException: " + aje);
             if (aje.ToString().Contains("ActivityNotFoundException"))
-                Debug.LogWarning("Tidak ada app viewer. Install PDF viewer (Google Drive/Adobe/WPS).");
+                Debug.LogWarning("Tidak ada app viewer. Install PDF/Word viewer (Google Drive/Adobe/WPS/Microsoft Word).");
 
             Application.OpenURL("file://" + localPath);
         }
