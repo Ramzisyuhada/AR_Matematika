@@ -1001,7 +1001,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 681.55505, y: 472.7352}
+  m_SizeDelta: {x: 681.55505, y: 229.6}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &325735298
 MonoBehaviour:
@@ -1023,7 +1023,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Texture: {fileID: 2800000, guid: 3b99cbcab3cb6d1468ce37c2fcff73f1, type: 3}
+  m_Texture: {fileID: 2800000, guid: 068596d0d9ecc2d4aa4f2612c6417e05, type: 3}
   m_UVRect:
     serializedVersion: 2
     x: 0
@@ -1071,11 +1071,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   apiKey: msy_s7aJa8LkOPKq2hCjYTPgEwHjZQL7u0D9BgOk
   imageUrl: https://suburfurniture.com/wp-content/uploads/2018/11/Uno-Kursi-Texas.jpg
-  colorFastPreset: 0
-  fastMode: 1
+  colorFastPreset: 1
+  fastMode: 0
   enablePbr: 0
   shouldRemesh: 0
-  shouldTexture: 0
+  shouldTexture: 1
   topology: triangle
   targetPolycount: 2000
   useSse: 1
@@ -1094,7 +1094,7 @@ MonoBehaviour:
   btnPhoto: {fileID: 578794168}
   btnMode: {fileID: 2128614622}
   loadingObject: {fileID: 18995861}
-  Camera: {fileID: 1098994172}
+  Camera: {fileID: 0}
   autoHideLoading: 1
   Rotate: {fileID: 1397483387}
   simulatedProgress: 0
@@ -1112,11 +1112,12 @@ MonoBehaviour:
   lastObjUrl: 
   lastUsdzUrl: 
   lowerTextureResWhileLoading: 1
-  alertOn: {fileID: 386065091}
-  alertOff: {fileID: 261749461}
+  alertOn: {fileID: 0}
+  alertOff: {fileID: 0}
   alertAnimIn: 0.18
   alertHold: 0.8
   alertAnimOut: 0.18
+  activeModeColor: {r: 0.12, g: 0.75, b: 0.12, a: 1}
 --- !u!4 &337258095
 Transform:
   m_ObjectHideFlags: 0
@@ -5117,12 +5118,12 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1861251480}
+  m_Father: {fileID: 2063341402}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -559.19995, y: 1020.69995}
-  m_SizeDelta: {x: -1216.5, y: -2149.4}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 200, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1798213558
 MonoBehaviour:
@@ -5315,10 +5316,10 @@ RectTransform:
   - {fileID: 142595337}
   - {fileID: 676635962}
   - {fileID: 18995862}
-  - {fileID: 1798213557}
   - {fileID: 879639370}
   - {fileID: 386065092}
   - {fileID: 261749462}
+  - {fileID: 2063341402}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -5455,6 +5456,69 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+--- !u!1 &2063341401
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2063341402}
+  - component: {fileID: 2063341403}
+  m_Layer: 5
+  m_Name: Button
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &2063341402
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2063341401}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1798213557}
+  m_Father: {fileID: 1861251480}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &2063341403
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2063341401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Padding:
+    m_Left: 52
+    m_Right: 0
+    m_Top: 40
+    m_Bottom: 0
+  m_ChildAlignment: 0
+  m_Spacing: 0
+  m_ChildForceExpandWidth: 1
+  m_ChildForceExpandHeight: 1
+  m_ChildControlWidth: 0
+  m_ChildControlHeight: 0
+  m_ChildScaleWidth: 0
+  m_ChildScaleHeight: 0
+  m_ReverseArrangement: 0
 --- !u!1 &2114621396
 GameObject:
   m_ObjectHideFlags: 0

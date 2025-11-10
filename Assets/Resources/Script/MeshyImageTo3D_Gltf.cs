@@ -125,6 +125,13 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
     public float alertHold = 0.8f;
     public float alertAnimOut = 0.18f;
 
+    // ======================= MODE BUTTON VISUAL =======================
+    [Header("Mode Button Visual")]
+    [Tooltip("Warna tombol ketika Mode (ColorFast) aktif")]
+    public Color activeModeColor = new Color(0.12f, 0.75f, 0.12f, 1f); // hijau
+    private ColorBlock _btnModeDefaultCB;
+    private bool _btnModeCBInited = false;
+
     private void ShowAlertObject(GameObject obj)
     {
         if (obj == null) return;
@@ -163,12 +170,17 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
 
         if (btnMode != null)
         {
+            // Simpan color block default agar bisa di-restore
+            _btnModeDefaultCB = btnMode.colors;
+            _btnModeCBInited = true;
+
             btnMode.onClick.RemoveAllListeners();
             btnMode.onClick.AddListener(OnClickModeButton);
         }
 
         // sinkronkan fastMode <-> colorFastPreset
         SyncPresetFlags();
+        UpdateModeButtonVisual();
         UpdatePhotoButtonState();
 
         if (runOnStart) StartCoroutine(AutoStartRoutine());
@@ -192,17 +204,51 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
         colorFastPreset = !colorFastPreset;
         SyncPresetFlags();
 
-        // Alert
-        if (colorFastPreset) ShowAlertObject(alertOn); else ShowAlertObject(alertOff);
+        // Visual tombol mode: hijau saat aktif, kembali normal saat nonaktif
+        UpdateModeButtonVisual();
+
+        // Alert (opsional)
+        // if (colorFastPreset) ShowAlertObject(alertOn); else ShowAlertObject(alertOff);
 
         EmitStatus(colorFastPreset ? "Mode: COLOR FAST (bertekstur)" : "Mode: FAST (tanpa tekstur)");
+    }
+
+    private void UpdateModeButtonVisual()
+    {
+        if (btnMode == null) return;
+
+        // Jika tombol memakai transition = Color Tint, kita ubah ColorBlock-nya
+        var cb = btnMode.colors;
+
+        if (colorFastPreset)
+        {
+            // aktif => hijau
+            cb.normalColor = activeModeColor;
+            cb.highlightedColor = Color.Lerp(activeModeColor, Color.white, 0.2f);
+            cb.pressedColor = Color.Lerp(activeModeColor, Color.black, 0.2f);
+            cb.selectedColor = activeModeColor;
+            btnMode.colors = cb;
+
+            // Jika targetGraphic ada, pastikan terlihat hijau saat idle
+            if (btnMode.targetGraphic != null)
+                btnMode.targetGraphic.color = cb.normalColor;
+        }
+        else
+        {
+            // nonaktif => restore color block default (jika tersedia)
+            if (_btnModeCBInited)
+            {
+                btnMode.colors = _btnModeDefaultCB;
+                if (btnMode.targetGraphic != null)
+                    btnMode.targetGraphic.color = _btnModeDefaultCB.normalColor;
+            }
+        }
     }
 
     // ======================= PUBLIC CONTROLS =======================
     [ContextMenu("Run Image->3D")]
     public void Run()
     {
-     
         if (btnPhoto != null) btnPhoto.interactable = false; // sedang proses
         if (_running != null) { Warn("Masih berjalan. Cancel dulu untuk restart."); return; }
         _cancelRequested = false;
@@ -765,7 +811,7 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
     public void HancurkanModel()
     {
         if (spawnParent == null) return;
-        btnPhoto.interactable = true;
+        if (btnPhoto != null) btnPhoto.interactable = true;
         for (int i = spawnParent.childCount - 1; i >= 0; i--)
         {
             var child = spawnParent.GetChild(i);
