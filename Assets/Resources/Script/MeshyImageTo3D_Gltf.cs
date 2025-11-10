@@ -684,7 +684,7 @@ public class MeshyImageTo3D_RuntimeOnlyV2 : MonoBehaviour
     {
         if (loadingObject != null && !loadingObject.activeSelf)
             loadingObject.SetActive(true);
-        if (Camera != null) Camera.SetActive(false);
+        //if (Camera != null) Camera.SetActive(false);
         if (!string.IsNullOrEmpty(text)) onStatusText?.Invoke(text);
         if (Rotate != null) Rotate.SetActive(true);
     }
