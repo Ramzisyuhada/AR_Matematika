@@ -273,11 +273,6 @@ public class QuestionView : MonoBehaviour
 
     bool IsPdf(byte[] bytes, string name, out string reason)
     {
-        if (!name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
-        {
-            reason = "Hanya .pdf yang diperbolehkan";
-            return false;
-        }
         if (bytes == null || bytes.Length == 0)
         {
             reason = "File kosong";
@@ -291,11 +286,32 @@ public class QuestionView : MonoBehaviour
             return false;
         }
 
-        // header %PDF-
-        if (bytes.Length < 5 || bytes[0] != 0x25 || bytes[1] != 0x50 || bytes[2] != 0x44 || bytes[3] != 0x46 || bytes[4] != 0x2D)
+        string ext = Path.GetExtension(name).ToLowerInvariant();
+
+        switch (ext)
         {
-            reason = "Bukan PDF valid (header %PDF- tidak ditemukan)";
-            return false;
+            case ".pdf":
+                // Cek header %PDF-
+                if (bytes.Length < 5 ||
+                    bytes[0] != 0x25 || // %
+                    bytes[1] != 0x50 || // P
+                    bytes[2] != 0x44 || // D
+                    bytes[3] != 0x46 || // F
+                    bytes[4] != 0x2D)   // -
+                {
+                    reason = "Bukan PDF valid (header %PDF- tidak ditemukan)";
+                    return false;
+                }
+                break;
+
+            case ".doc":
+            case ".docx":
+                // Untuk Word biasanya cukup cek ekstensi saja
+                break;
+
+            default:
+                reason = "Hanya file PDF / DOC / DOCX yang diperbolehkan";
+                return false;
         }
 
         reason = null;

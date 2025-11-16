@@ -8,6 +8,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using TMPro;
 using Unity.Burst.Intrinsics;
+using UnityAndroidOpenUrl;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
@@ -501,7 +502,7 @@ public class AnswerView : MonoBehaviour
         if (File.Exists(localPath))
         {
             Debug.Log("[OpenLocalOrDownload] File sudah ada, langsung buka: " + localPath);
-            OpenWithNativeShare(localPath);
+            AndroidOpenUrl.OpenFile(localPath);
             return;
         }
 
@@ -590,7 +591,8 @@ public class AnswerView : MonoBehaviour
             Debug.Log($"[DownloadToFile] Saved {size} bytes at {savePath} (Content-Type={contentType})");
 
             // 5) Buka dengan NativeShare (chooser ke PDF viewer / app terkait)
-            OpenWithNativeShare(savePath);
+            AndroidOpenUrl.OpenFile(savePath);
+
         }
     }
 
