@@ -9,6 +9,8 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityAndroidOpenUrl;
+
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -423,64 +425,11 @@ public class QuestionView : MonoBehaviour
     // ============ OPEN FILE (ANDROID aman dengan FileProvider) ============
     private void OpenFile(string localPath)
     {
+        string dataType = "application/pdf";
+
 #if UNITY_ANDROID && !UNITY_EDITOR
-        try
-        {
-            if (!System.IO.File.Exists(localPath))
-            {
-                Debug.LogError("[OpenFile] File tidak ditemukan: " + localPath);
-                return;
-            }
+        AndroidOpenUrl.OpenFile(localPath, dataType); // you can specify any MIME type when opening a file by explicitly specifying the dataType parameter
 
-            long size = new System.IO.FileInfo(localPath).Length;
-            Debug.Log($"[OpenFile] path={localPath} size={size}B");
-
-            AndroidJavaClass intentClass = new AndroidJavaClass("android.content.Intent");
-            AndroidJavaObject intent = new AndroidJavaObject("android.content.Intent");
-            intent.Call<AndroidJavaObject>("setAction", intentClass.GetStatic<string>("ACTION_VIEW"));
-
-            AndroidJavaObject activity = GetUnityActivity();
-            string authority = Application.identifier + ".fileprovider";
-            AndroidJavaClass uriClass = new AndroidJavaClass("androidx.core.content.FileProvider");
-            AndroidJavaObject fileObj = new AndroidJavaObject("java.io.File", localPath);
-            AndroidJavaObject uri = uriClass.CallStatic<AndroidJavaObject>("getUriForFile", activity, authority, fileObj);
-
-            string mime = GetMimeType(localPath);
-            intent.Call<AndroidJavaObject>("setDataAndType", uri, mime);
-
-            const int FLAG_GRANT_READ_URI_PERMISSION = 1;
-            const int FLAG_ACTIVITY_CLEAR_TOP = 0x04000000;
-            intent.Call<AndroidJavaObject>("addFlags", FLAG_GRANT_READ_URI_PERMISSION);
-            intent.Call<AndroidJavaObject>("addFlags", FLAG_ACTIVITY_CLEAR_TOP);
-
-            AndroidJavaClass clipDataClass = new AndroidJavaClass("android.content.ClipData");
-            AndroidJavaObject clip = clipDataClass.CallStatic<AndroidJavaObject>(
-                "newUri",
-                new AndroidJavaObject("java.lang.CharSequence", "File"),
-                new AndroidJavaObject("java.lang.String", "text/uri-list"),
-                uri
-            );
-            intent.Call("setClipData", clip);
-
-            AndroidJavaObject chooser =
-                intentClass.CallStatic<AndroidJavaObject>("createChooser", intent, new AndroidJavaObject("java.lang.String", "Buka dengan"));
-
-            Debug.Log($"[OpenFile] uri={uri?.Call<string>("toString")} mime={mime} authority={authority}");
-            activity.Call("startActivity", chooser);
-        }
-        catch (AndroidJavaException aje)
-        {
-            Debug.LogError("[OpenFile] AndroidJavaException: " + aje);
-            if (aje.ToString().Contains("ActivityNotFoundException"))
-                Debug.LogWarning("Tidak ada app viewer. Install PDF/Word viewer (Google Drive/Adobe/WPS/Microsoft Word).");
-
-            Application.OpenURL("file://" + localPath);
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError("[OpenFile] Exception: " + e.Message);
-            Application.OpenURL("file://" + localPath);
-        }
 #else
         Application.OpenURL(localPath);
 #endif
